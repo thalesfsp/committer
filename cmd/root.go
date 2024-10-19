@@ -222,6 +222,8 @@ var rootCmd = &cobra.Command{
 		// Tag commit if user approves.
 		//////
 
+		// TODO: Should obtain a list of tags, order, and display them to the
+		// user.
 		if promptYesNo("Would you like to tag the commit?") {
 			tag := promptForInput("Enter the tag name:")
 			if err := gitTag(tag); err != nil {
