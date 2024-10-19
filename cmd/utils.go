@@ -153,6 +153,8 @@ func gitCommit(message string) error {
 }
 
 // gitPush pushes the commits.
+//
+// TODO: Output to /dev/null.
 func gitPush() error {
 	cmd := exec.Command("git", "push")
 
@@ -182,6 +184,8 @@ func gitPushTags() error {
 }
 
 // promptYesNo prompts the user with a yes/no question.
+//
+// TODO: Should not add new line if there's was no message before.
 func promptYesNo(question string) bool {
 	reader := bufio.NewReader(os.Stdin)
 
