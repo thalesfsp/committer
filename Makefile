@@ -1,7 +1,3 @@
-# Copyright 2022 The configurer Authors. All rights reserved.
-# Use of this source code is governed by a MIT
-# license that can be found in the LICENSE file.
-
 ###
 # Params.
 ###
@@ -38,7 +34,7 @@ ifndef HAS_GODOC
 	@echo "Could not find godoc, installing it"
 	@go install golang.org/x/tools/cmd/godoc@latest
 endif
-	@echo "Open http://localhost:6060/pkg/github.com/thalesfsp/configurer/ in your browser\n"
+	@echo "Open http://localhost:6060/pkg/github.com/thalesfsp/committer/ in your browser\n"
 	@godoc -http :6060
 
 lint:
