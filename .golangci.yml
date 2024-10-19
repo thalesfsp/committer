@@ -12,6 +12,7 @@ linters:
     - tagliatelle
     - ireturn
     - testpackage
+    - godox
   fast: true
 
 

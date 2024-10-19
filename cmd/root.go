@@ -109,6 +109,7 @@ var rootCmd = &cobra.Command{
 		// Check if there are staged changes.
 		//////
 
+		// TODO: If partially staged, should ask to stage all changes.
 		if !hasStagedChanges() {
 			cliLogger.Debugln("No staged changes detected.")
 
@@ -179,8 +180,11 @@ var rootCmd = &cobra.Command{
 				cliLogger.Fatalln(err)
 			}
 
+			// TODO: Should not add a new line here if there was no message
+			// before.
 			fmt.Printf("\nGenerated Commit Message:\n%s\n", message)
 
+			// TODO: Add default value.
 			if promptYesNo("Do you approve this commit message?") {
 				commitMessage = message
 

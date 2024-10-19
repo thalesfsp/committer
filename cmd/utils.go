@@ -186,7 +186,7 @@ func promptYesNo(question string) bool {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		fmt.Printf("%s (y/n): ", question)
+		fmt.Printf("\n%s (y/n): ", question)
 
 		response, _ := reader.ReadString('\n')
 
