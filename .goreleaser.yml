@@ -1,0 +1,55 @@
+project_name: committer
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^makefile:'
+      - '^testing:'
+
+builds:
+  - env: 
+      - CGO_ENABLED=0
+    flags:
+      # - `trimpath` removes absolute path in the trace.
+      - -trimpath
+    ldflags:
+      # - w: No DWARF (reduces binary size)
+      # - s: No symbol table (even less binary size)
+      - -s -w
+
+      # - `znow` and `zrelro`: Hardening (SEE: https://red.ht/3CQ43Zg)
+      - -extldflags '-zrelro'
+      - -extldflags '-znow'
+
+      # Creates static binaries (SEE: https://bit.ly/3CoBQr7)
+      - -extldflags '-static'
+
+      - -X github.com/thalesfsp/committer/internal/version.buildCommit={{.FullCommit}}
+      - -X github.com/thalesfsp/committer/internal/version.buildVersion={{.Version}}
+      - -X github.com/thalesfsp/committer/internal/version.buildTime={{.CommitDate}}
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+      - arm
+    goarm:
+      - "6"
+      - "7"
+
+source:
+  enabled: true
+
+# SEE: https://shibumi.dev/posts/keyless-signatures-with-github-actions/
+signs:
+  - cmd: cosign
+    signature: "${artifact}.sig"
+    args: ["sign-blob", "--oidc-issuer=https://token.actions.githubusercontent.com", "--yes", "--output-signature=${signature}", "${artifact}"]
+    artifacts: all
+
+checksum:
+  name_template: "checksums"
