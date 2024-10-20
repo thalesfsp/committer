@@ -1,43 +1,60 @@
 package cmd
 
 import (
-	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
+	"github.com/charmbracelet/bubbles/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/thalesfsp/customerror"
 	"github.com/thalesfsp/inference/provider"
 )
 
+var syplLevel = os.Getenv("SYPL_LEVEL")
+
 // isDebugMode checks if the CLI is running in debug mode.
 func isDebugMode() bool {
-	syplLevel := os.Getenv("SYPL_LEVEL")
-
 	return syplLevel == "debug"
 }
 
 // isCurrentDirectoryGitRepo checks if the current directory is a Git repository.
 func isCurrentDirectoryGitRepo() bool {
 	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 
-	return cmd.Run() == nil
+	err := cmd.Run()
+	if err != nil {
+		fmt.Fprint(os.Stderr, stderr.String())
+
+		return false
+	}
+	return true
 }
 
 // hasStagedChanges checks if there are any staged changes.
 func hasStagedChanges() bool {
 	cmd := exec.Command("git", "diff", "--staged", "--quiet")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 
-	return cmd.Run() != nil
+	err := cmd.Run()
+	if err != nil {
+		// If there are staged changes, git diff --quiet exits with status 1.
+		// So we return true without printing the error.
+		return true
+	}
+	return false
 }
 
 // gitAddAll adds all changes to staging.
 func gitAddAll() error {
 	cmd := exec.Command("git", "add", ".")
 
-	return cmd.Run()
+	return runCommand(cmd)
 }
 
 // getGitDiff gets the staged diff.
@@ -46,6 +63,8 @@ func getGitDiff() (string, error) {
 
 	out, err := cmd.Output()
 	if err != nil {
+		fmt.Fprint(os.Stderr, string(out))
+
 		return "", ErrorCatalog.MustGet(ErrFailedToGitDiff, customerror.WithError(err))
 	}
 
@@ -58,6 +77,8 @@ func getGitStats() (string, error) {
 
 	out, err := cmd.Output()
 	if err != nil {
+		fmt.Fprint(os.Stderr, string(out))
+
 		return "", ErrorCatalog.MustGet(ErrFailedToGitStats, customerror.WithError(err))
 	}
 
@@ -80,48 +101,7 @@ func chunkDiff(maxChars int, diff string) ([]string, error) {
 	return chunks, nil
 }
 
-// generateCommitMessage generates a commit message using LLM API.
-//
-//nolint:lll
-func generateCommitMessage(
-	ctx context.Context,
-	providerInUse provider.IProvider,
-	stats, diff string,
-	chunkNumber, totalChunks int,
-) (string, error) {
-	var prompt string
-	if totalChunks > 1 {
-		// Diff is chunked
-		prompt = fmt.Sprintf(`Please generate a concise and descriptive commit message based on the following staged changes. Note that the diff is too big, so we chunked it into smaller parts:
-
-Change Statistics:
-%s
-
-Chunk %d of %d:
-%s`, stats, chunkNumber, totalChunks, diff)
-	} else {
-		// Diff is not chunked; use standard prompt
-		prompt = fmt.Sprintf(`Please generate a concise and descriptive commit message based on the following staged changes:
-
-Change Statistics:
-%s
-
-Code Changes:
-%s`, stats, diff)
-	}
-
-	cliLogger.Debuglnf("Prompting LLM with the following prompt:\n%s", prompt)
-
-	// Call LLM API
-	message, err := callLLM(ctx, providerInUse, prompt)
-	if err != nil {
-		return "", err
-	}
-
-	return message, nil
-}
-
-// callLLM calls the LLM API (OpenAI or Ollama).
+// callLLM calls the LLM API (OpenAI, Anthropic, or Ollama).
 func callLLM(
 	ctx context.Context,
 	providerInUse provider.IProvider,
@@ -140,80 +120,253 @@ func callLLM(
 }
 
 // gitCommit commits the changes with the provided message.
-//
-// TODO: Output to /dev/null.
 func gitCommit(message string) error {
 	cmd := exec.Command("git", "commit", "-m", message)
-
-	cmd.Stdout = os.Stdout
-
-	cmd.Stderr = os.Stderr
-
-	return cmd.Run()
+	return runCommand(cmd)
 }
 
 // gitPush pushes the commits.
-//
-// TODO: Output to /dev/null.
 func gitPush() error {
 	cmd := exec.Command("git", "push")
-
-	cmd.Stdout = os.Stdout
-
-	cmd.Stderr = os.Stderr
-
-	return cmd.Run()
+	return runCommand(cmd)
 }
 
 // gitTag tags the commit with the provided tag name.
 func gitTag(tag string) error {
 	cmd := exec.Command("git", "tag", tag)
-
-	return cmd.Run()
+	return runCommand(cmd)
 }
 
 // gitPushTags pushes the tags to the remote repository.
 func gitPushTags() error {
 	cmd := exec.Command("git", "push", "--tags")
-
-	cmd.Stdout = os.Stdout
-
-	cmd.Stderr = os.Stderr
-
-	return cmd.Run()
+	return runCommand(cmd)
 }
 
-// promptYesNo prompts the user with a yes/no question.
-//
-// TODO: Should not add new line if there's was no message before.
-func promptYesNo(question string) bool {
-	reader := bufio.NewReader(os.Stdin)
+// runCommand executes a command and outputs errors to os.Stderr if any.
+func runCommand(cmd *exec.Cmd) error {
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 
-	for {
-		fmt.Printf("\n%s (y/n): ", question)
+	err := cmd.Run()
+	if err != nil {
+		fmt.Fprint(os.Stderr, stderr.String())
+		return err
+	}
+	return nil
+}
 
-		response, _ := reader.ReadString('\n')
+func handleTryAgain() string {
+	changeChoice := promptWithChoices("What would you like to change?", []string{
+		"Make more succinct",
+		"Make more technical",
+		"Make less technical",
+		"Write what should change",
+	})
 
-		response = strings.TrimSpace(strings.ToLower(response))
+	switch changeChoice {
+	case "Make more succinct":
+		return "Please make the commit message more succinct while still conveying the essence of the change."
+	case "Make more technical":
+		return `Please make the commit message more technical, adding IF POSSIBLE, more context and details aiding engineering comprehension:
 
-		if response == "y" || response == "yes" {
-			return true
-		} else if response == "n" || response == "no" {
-			return false
+1. Include relevant technical terms, e.g., function names, data structures, or algorithms modified.
+2. Specify the exact files or modules affected.
+3. For bug fixes, IF possible, briefly describe the root cause and solution.
+4. For new features, IF possible, outline the core implementation approach.
+5. Use concise language while maintaining technical accuracy.
+
+Examples:
+- "Optimized database query in user_auth.py using indexing"
+- "Implemented red-black tree for efficient sorting in data_processor.cpp"
+- "Fixed race condition in thread pool by adding mutex lock in worker.java"
+
+Aim for a balance between technical depth and clarity. Prioritize information that aids code review and future maintenance. No more than 1000 characters!`
+	case "Make less technical":
+		return `Please make commit messages non-technical, suitable for general audiences. Aim for brevity while still conveying the essence of the change. Examples:
+
+- For updating dependencies: "Updated dependencies"
+- For fixing a bug: "Fixed login issue"
+- For adding a feature: "Added dark mode"
+- For refactoring: "Improved code structure"
+
+For complex changes, summarize the overall impact rather than listing technical details. If multiple significant changes are present, use a bulleted list.`
+	case "Write what should change":
+		return promptForInputTea("Describe what should change:")
+	default:
+		return ""
+	}
+}
+
+func generateCommitMessageLoop(providerInUse provider.IProvider, stats string, chunks []string) (string, error) {
+	totalChunks := len(chunks)
+	additionalInstructions := ""
+	maxAttempts := 5 // Define a maximum number of attempts to prevent infinite loops
+
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		for i, chunk := range chunks {
+			ctxWithTimeout, cancel := context.WithTimeout(context.Background(), llmAPICallTimeout)
+
+			spinnerStart("Generating commit message...")
+			message, err := generateCommitMessage(
+				ctxWithTimeout,
+				providerInUse,
+				stats, chunk,
+				i+1, totalChunks,
+				additionalInstructions,
+			)
+			cancel() // Cancel the context right after use
+
+			if err != nil {
+				return "", fmt.Errorf("failed to generate commit message: %w", err)
+			}
+
+			spinnerStop()
+
+			fmt.Printf("\n%s\n\n%s\n\n", questionStyle.Render("Generated Commit Message:"), message)
+
+			choice := promptWithChoices("What would you like to do?", []string{
+				"Approve commit message",
+				"Try again",
+				"Write commit message yourself",
+				"Exit",
+			})
+
+			switch choice {
+			case "Approve commit message":
+				return message, nil
+			case "Try again":
+				additionalInstructions = handleTryAgain()
+				break // Break inner loop to regenerate
+			case "Write commit message yourself":
+				return promptForInputTea("Enter your commit message:"), nil
+			case "Exit":
+				fmt.Println("Nothing to do, exiting...")
+
+				os.Exit(0)
+			}
+
+			break // Break inner loop if "Try again" was selected
 		}
 	}
+
+	return "", fmt.Errorf("maximum attempts reached")
 }
 
-// promptForInput prompts the user for input.
-func promptForInput(prompt string) string {
-	fmt.Println(prompt)
+// generateCommitMessage generates a commit message using LLM API with additional instructions.
+func generateCommitMessage(
+	ctx context.Context,
+	providerInUse provider.IProvider,
+	stats, diff string,
+	chunkNumber, totalChunks int,
+	additionalInstructions string,
+) (string, error) {
+	var prompt string
+	if totalChunks > 1 {
+		// Diff is chunked
+		prompt = fmt.Sprintf(`Please generate a concise and descriptive commit message based on the following staged changes. Note that the diff is too big, so we chunked it into smaller parts:
 
-	reader := bufio.NewReader(os.Stdin)
+Change Statistics:
+%s
 
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		cliLogger.Fatalln(err)
+Chunk %d of %d:
+%s
+
+%s`, stats, chunkNumber, totalChunks, diff, additionalInstructions)
+	} else {
+		// Diff is not chunked; use standard prompt
+		prompt = fmt.Sprintf(`Please generate a concise and descriptive commit message based on the following staged changes:
+
+Change Statistics:
+%s
+
+Code Changes:
+%s
+
+%s`, stats, diff, additionalInstructions)
 	}
 
-	return strings.TrimSpace(input)
+	cliLogger.Tracelnf("Prompting LLM with the following prompt:\n%s", prompt)
+
+	// Call LLM API
+	message, err := callLLM(ctx, providerInUse, prompt)
+	if err != nil {
+		return "", err
+	}
+
+	return message, nil
+}
+
+// promptYesNoTea prompts a yes/no question using Tea.
+func promptYesNoTea(question string) bool {
+	choices := []string{"Yes", "No"}
+	m := cliModel{
+		question: question,
+		choices:  choices,
+	}
+
+	p := tea.NewProgram(m)
+	model, err := p.Run()
+	if err != nil {
+		cliLogger.Fatalln(ErrorCatalog.
+			MustGet(ErrFailedToInitTea).
+			NewFailedToError(customerror.WithError(err)),
+		)
+	}
+
+	if m, ok := model.(cliModel); ok && m.choice != "" {
+		return m.choice == "Yes"
+	}
+	return false
+}
+
+// promptForInputTea prompts the user for input using Tea.
+func promptForInputTea(prompt string) string {
+	ti := textinput.New()
+	ti.Placeholder = ""
+	ti.Focus()
+	ti.CharLimit = 256
+	ti.Width = 50
+	ti.Prompt = inputStyle.Render("> ")
+
+	m := inputModel{
+		textinput: ti,
+		prompt:    prompt,
+	}
+
+	p := tea.NewProgram(m)
+	model, err := p.Run()
+	if err != nil {
+		cliLogger.Fatalln(ErrorCatalog.
+			MustGet(ErrFailedToInitTea).
+			NewFailedToError(customerror.WithError(err)),
+		)
+	}
+
+	if m, ok := model.(inputModel); ok && m.input != "" {
+		return m.input
+	}
+	return ""
+}
+
+// promptWithChoices prompts the user with multiple choices using Tea.
+func promptWithChoices(question string, choices []string) string {
+	m := cliModel{
+		question: question,
+		choices:  choices,
+	}
+
+	p := tea.NewProgram(m)
+	model, err := p.Run()
+	if err != nil {
+		cliLogger.Fatalln(ErrorCatalog.
+			MustGet(ErrFailedToInitTea).
+			NewFailedToError(customerror.WithError(err)),
+		)
+	}
+
+	if m, ok := model.(cliModel); ok && m.choice != "" {
+		return m.choice
+	}
+	return ""
 }
