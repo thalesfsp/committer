@@ -223,7 +223,7 @@ func generateCommitMessageLoop(providerInUse provider.IProvider, stats string, c
 
 			spinnerStop()
 
-			fmt.Printf("\n%s\n\n%s\n\n", questionStyle.Render("Generated Commit Message:"), message)
+			fmt.Printf("%s\n\n%s\n\n", questionStyle.Render("Generated Commit Message:"), message)
 
 			choice := promptWithChoices("What would you like to do?", []string{
 				"Approve commit message",
@@ -298,14 +298,23 @@ Code Changes:
 }
 
 // promptYesNoTea prompts a yes/no question using Tea.
-func promptYesNoTea(question string) bool {
+func promptYesNoTea(question string, defaultChoice bool) bool {
 	choices := []string{"Yes", "No"}
+
+	defaultIndex := 1
+	if defaultChoice {
+		defaultIndex = 0
+	}
+
 	m := cliModel{
-		question: question,
-		choices:  choices,
+		question:      question,
+		choices:       choices,
+		defaultChoice: defaultIndex,
+		cursor:        defaultIndex, // Set initial cursor to default choice
 	}
 
 	p := tea.NewProgram(m)
+
 	model, err := p.Run()
 	if err != nil {
 		cliLogger.Fatalln(ErrorCatalog.
@@ -317,6 +326,7 @@ func promptYesNoTea(question string) bool {
 	if m, ok := model.(cliModel); ok && m.choice != "" {
 		return m.choice == "Yes"
 	}
+
 	return false
 }
 

@@ -15,6 +15,7 @@ const (
 	ErrInvalidProvider          = "ERR_INVALID_PROVIDER"             // Invalid.
 	ErrNotGitRepo               = "ERR_NOT_GIT_REPO"                 // Required.
 	ErrFailedToInitTea          = "ERR_FAILED_TO_INIT_TEA"           // FailedTo.
+	ErrEmptyCommitMessage       = "ERR_EMPTY_COMMIT_MESSAGE"         // Missing.
 )
 
 // ErrorCatalog is the error catalog for the CLI.
@@ -29,4 +30,5 @@ var ErrorCatalog = customerror.
 	MustSet(ErrFailedToStageFiles, "stage files").
 	MustSet(ErrInvalidProvider, "provider").
 	MustSet(ErrNotGitRepo, "current directory is not a git repository").
-	MustSet(ErrFailedToInitTea, "initialize Tea application")
+	MustSet(ErrFailedToInitTea, "initialize Tea application").
+	MustSet(ErrEmptyCommitMessage, "commit message")

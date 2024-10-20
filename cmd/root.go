@@ -1,7 +1,8 @@
+// root.go
+
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -18,21 +19,23 @@ import (
 	"github.com/thalesfsp/sypl/processor"
 )
 
-//////
-// Const, vars, and types.
-//////
-
+// Constants for the choices.
 const (
-	// Name of entity.
-	Name = "committer"
-
-	// Type of entity.
-	Type = "cli"
+	Accept        = "Accept"
+	Edit          = "Edit"
+	Exit          = "Exit"
+	Regenerate    = "Regenerate"
+	YesAndProceed = "Yes and proceed"
+	NoAndProceed  = "No and proceed"
+	AddAllFiles   = "Add all files"
+	Proceed       = "Proceed"
 )
 
-//////
-// CLI flags content.
-//////
+// Name and Type of the CLI.
+const (
+	Name = "committer"
+	Type = "cli"
+)
 
 // Flags.
 var (
@@ -42,41 +45,25 @@ var (
 	model             string
 )
 
-//////
 // CLI logger.
-//////
-
 var cliLogger = sypl.NewDefault(Name, level.Info, processor.Tagger(Type))
-
-//////
-// Command definition.
-//////
 
 // rootCmd represents the base command.
 var rootCmd = &cobra.Command{
 	Use:   Name,
 	Short: "A CLI tool to generate meaningful commit messages",
 	Run: func(cmd *cobra.Command, args []string) {
-		//////
 		// For debug purposes.
-		//////
-
 		if isDebugMode() {
 			cliLogger.Breakpoint(Name)
 		}
 
-		//////
 		// Check if the current directory is a Git repository.
-		//////
-
 		if !isCurrentDirectoryGitRepo() {
 			cliLogger.Fatalln(ErrorCatalog.MustGet(ErrNotGitRepo).New())
 		}
 
-		//////
 		// Provider definition.
-		//////
-
 		var providerInUse provider.IProvider
 
 		switch llmProvider {
@@ -105,16 +92,13 @@ var rootCmd = &cobra.Command{
 			cliLogger.Fatalln(ErrorCatalog.MustGet(ErrInvalidProvider).New())
 		}
 
-		//////
 		// Check if there are staged changes.
-		//////
-
-		// TODO: If partially staged, should ask to stage all changes.
 		if !hasStagedChanges() {
-			cliLogger.Debugln("No staged changes detected.")
-
-			if promptYesNo("Would you like to add all changes?") {
+			if promptYesNoTea("Would you like to add all changes?", false) {
+				spinnerStart("Adding files...")
 				if err := gitAddAll(); err != nil {
+					spinnerStop()
+
 					cliLogger.Fatalln(
 						ErrorCatalog.MustGet(
 							ErrFailedToStageFiles,
@@ -122,117 +106,77 @@ var rootCmd = &cobra.Command{
 						),
 					)
 				}
+
+				spinnerStop()
 			} else {
-				cliLogger.Debugln("Nothing to do, exiting...")
+				fmt.Println("Nothing to do, exiting...")
+
 				os.Exit(0)
 			}
 		}
 
-		//////
 		// Get the diff and stats.
-		//////
-
+		spinnerStart("Getting diff...")
 		diff, err := getGitDiff()
 		if err != nil {
 			cliLogger.Fatalln(err)
 		}
+		spinnerStop()
 
-		//////
-		// Generate commit message.
-		//////
-
+		spinnerStart("Getting stats...")
 		stats, err := getGitStats()
 		if err != nil {
 			cliLogger.Fatalln(err)
 		}
+		spinnerStop()
 
-		//////
 		// Chunking if diff is too big.
-		//////
-
+		spinnerStart("Generating chunks...")
 		chunks, err := chunkDiff(chunkThreshold, diff)
 		if err != nil {
 			cliLogger.Fatalln(err)
 		}
+		spinnerStop()
 
-		//////
-		// Generate commit message using LLM.
-		//////
-
-		commitMessage := ""
-
-		totalChunks := len(chunks) // Get the total number of chunks
-
-		ctxWithTimeout, cancel := context.WithTimeout(
-			context.Background(),
-			llmAPICallTimeout,
-		)
-		defer cancel()
-
-		for i, chunk := range chunks {
-			message, err := generateCommitMessage(
-				ctxWithTimeout,
-				providerInUse,
-				stats, chunk,
-				i+1, totalChunks,
-			)
-			if err != nil {
-				cliLogger.Fatalln(err)
-			}
-
-			// TODO: Should not add a new line here if there was no message
-			// before.
-			fmt.Printf("\nGenerated Commit Message:\n%s\n", message)
-
-			// TODO: Add default value.
-			if promptYesNo("Do you approve this commit message?") {
-				commitMessage = message
-
-				break
-			} else if promptYesNo("Would you like to try again?") {
-				continue
-			} else if promptYesNo("Would you like to write the commit message yourself?") {
-				commitMessage = promptForInput("Enter your commit message:")
-
-				break
-			}
-
-			os.Exit(0)
-		}
-
-		//////
-		// Commit changes.
-		//////
-
-		if err := gitCommit(commitMessage); err != nil {
+		// Generate commit message.
+		commitMessage, err := generateCommitMessageLoop(providerInUse, stats, chunks)
+		if err != nil {
 			cliLogger.Fatalln(err)
 		}
 
-		//////
-		// Push changes if user approves.
-		//////
+		if commitMessage == "" {
+			cliLogger.Fatalln(ErrorCatalog.MustGet(ErrEmptyCommitMessage).NewMissingError())
+		}
 
-		if promptYesNo("Would you like to push the commits?") {
+		// Commit changes.
+		spinnerStart("Committing changes...")
+		if err := gitCommit(commitMessage); err != nil {
+			cliLogger.Fatalln(err)
+		}
+		spinnerStop()
+
+		// Push changes.
+		spinnerStart("Pushing changes...")
+		if promptYesNoTea("Would you like to push the commits?", true) {
 			if err := gitPush(); err != nil {
 				cliLogger.Fatalln(err)
 			}
 		}
+		spinnerStop()
 
-		//////
-		// Tag commit if user approves.
-		//////
-
-		// TODO: Should obtain a list of tags, order, and display them to the
-		// user.
-		if promptYesNo("Would you like to tag the commit?") {
-			tag := promptForInput("Enter the tag name:")
+		// Tag changes.
+		spinnerStart("Tagging changes...")
+		if promptYesNoTea("Would you like to tag the commit?", false) {
+			tag := promptForInputTea("Enter the tag name:")
 			if err := gitTag(tag); err != nil {
 				cliLogger.Fatalln(err)
 			}
+
 			if err := gitPushTags(); err != nil {
 				cliLogger.Fatalln(err)
 			}
 		}
+		spinnerStop()
 
 		os.Exit(0)
 	},
@@ -243,9 +187,8 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
-//nolint:lll,gomnd,mnd,gochecknoinits
 func init() {
-	// Add the flag to your command
+	// Add the flags to your command
 	rootCmd.Flags().IntVarP(&chunkThreshold, "chunk-threshold", "c", 128000, "Chunk threshold in characters")
 	rootCmd.Flags().DurationVarP(&llmAPICallTimeout, "llm-api-call-timeout", "t", 15*time.Second, "LLM API call timeout")
 	rootCmd.Flags().StringVarP(&model, "model", "m", "gpt-4o", "Model to be used by the provider for generating commit messages")
