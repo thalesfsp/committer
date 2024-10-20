@@ -3,7 +3,9 @@ module github.com/thalesfsp/committer
 go 1.23.1
 
 require (
+	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.1.1
+	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/pkoukk/tiktoken-go v0.1.7
 	github.com/spf13/cobra v1.8.1
 	github.com/thalesfsp/customerror v1.2.7
@@ -21,8 +23,6 @@ require (
 	github.com/awnumar/memguard v0.22.5 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/charmbracelet/bubbles v0.20.0 // indirect
-	github.com/charmbracelet/lipgloss v0.13.0 // indirect
 	github.com/charmbracelet/x/ansi v0.2.3 // indirect
 	github.com/charmbracelet/x/term v0.2.0 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
