@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -37,8 +38,9 @@ func (m cliModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case tea.KeyCtrlC.String(), tea.KeyEsc.String(), "q":
-			return m, tea.Quit
+			fmt.Println("Nothing to do, exiting...")
 
+			os.Exit(0)
 		case "enter":
 			// Set the choice and exit.
 			m.choice = m.choices[m.cursor]
@@ -83,7 +85,13 @@ func (m cliModel) View() string {
 	}
 
 	s.WriteString("\n")
-	s.WriteString(hintStyle.Render("(Use ↑/↓ to navigate, Enter to select)"))
+	s.WriteString(hintStyle.Render(
+		fmt.Sprintf(
+			`(Use ↑/↓ to navigate, Enter to select, or %s, %s or "q" to quit)`,
+			strings.ToUpper(tea.KeyCtrlC.String()),
+			strings.ToUpper(tea.KeyEsc.String()),
+		),
+	))
 	s.WriteString("\n\n")
 
 	return s.String()

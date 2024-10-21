@@ -239,7 +239,12 @@ func generateCommitMessageLoop(providerInUse provider.IProvider, stats string, c
 				additionalInstructions = handleTryAgain()
 				break // Break inner loop to regenerate
 			case "Write commit message yourself":
-				return promptForInputTea("Enter your commit message:"), nil
+				content, err := commitMessageTextArea()
+				if err != nil {
+					return "", fmt.Errorf("failed to get commit message: %w", err)
+				}
+
+				return content, nil
 			case "Exit":
 				fmt.Println("Nothing to do, exiting...")
 
@@ -295,6 +300,22 @@ Code Changes:
 	}
 
 	return message, nil
+}
+
+// commitMessageTextArea is a Tea model for the commit message text area.
+func commitMessageTextArea() (string, error) {
+	p := tea.NewProgram(initializeTextAreModel())
+	m, err := p.Run()
+	if err != nil {
+		return "", err
+	}
+
+	// Check if the program finished due to Ctrl+Enter
+	if m.(textAreModel).done {
+		return m.(textAreModel).textarea.Value(), nil
+	}
+
+	return "", nil
 }
 
 // promptYesNoTea prompts a yes/no question using Tea.
