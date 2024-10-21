@@ -244,7 +244,7 @@ func generateCommitMessageLoop(providerInUse provider.IProvider, stats string, c
 					return "", fmt.Errorf("failed to get commit message: %w", err)
 				}
 
-				return content, nil
+				return content + "\n", nil
 			case "Exit":
 				fmt.Println("Nothing to do, exiting...")
 
