@@ -92,6 +92,12 @@ var rootCmd = &cobra.Command{
 			cliLogger.Fatalln(ErrorCatalog.MustGet(ErrInvalidProvider).New())
 		}
 
+		if !isDirty() {
+			fmt.Println("Nothing to do, exiting...")
+
+			os.Exit(0)
+		}
+
 		// Check if there are staged changes.
 		if !hasStagedChanges() {
 			if promptYesNoTea("Would you like to add all changes?", false) {

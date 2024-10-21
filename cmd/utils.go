@@ -35,6 +35,19 @@ func isCurrentDirectoryGitRepo() bool {
 	return true
 }
 
+// isDirty checks if there are any uncommitted changes.
+func isDirty() bool {
+	cmd := exec.Command("git", "diff", "--quiet")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return true
+	}
+	return false
+}
+
 // hasStagedChanges checks if there are any staged changes.
 func hasStagedChanges() bool {
 	cmd := exec.Command("git", "diff", "--staged", "--quiet")
