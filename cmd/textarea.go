@@ -71,7 +71,7 @@ func (m textAreModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m textAreModel) View() string {
 	if m.done {
-		return m.textarea.Value()
+		return m.textarea.Value() + "\n\n"
 	}
 
 	return fmt.Sprintf(
