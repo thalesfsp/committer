@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// Style definitions
+// Style definitions.
 var (
 	questionStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF06B7")).Bold(true)
 	cursorStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00"))
@@ -44,16 +44,19 @@ func (m cliModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			// Set the choice and exit.
 			m.choice = m.choices[m.cursor]
+
 			return m, tea.Quit
 
 		case "down", "j":
 			m.cursor++
+
 			if m.cursor >= len(m.choices) {
 				m.cursor = 0
 			}
 
 		case "up", "k":
 			m.cursor--
+
 			if m.cursor < 0 {
 				m.cursor = len(m.choices) - 1
 			}
@@ -67,24 +70,33 @@ func (m cliModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m cliModel) View() string {
 	var s strings.Builder
+
 	s.WriteString(questionStyle.Render(m.question))
+
 	s.WriteString("\n\n")
 
 	for i := 0; i < len(m.choices); i++ {
 		cursor := "  "
+
 		if m.cursor == i {
 			cursor = cursorStyle.Render("➤ ")
 		}
+
 		choice := m.choices[i]
+
 		if i == m.defaultChoice {
 			choice += " (default)"
 		}
+
 		s.WriteString(cursor)
+
 		s.WriteString(choiceStyle.Render(choice))
+
 		s.WriteString("\n")
 	}
 
 	s.WriteString("\n")
+
 	s.WriteString(hintStyle.Render(
 		fmt.Sprintf(
 			`(Use ↑/↓ to navigate, Enter to select, or %s, %s or "q" to quit)`,
@@ -92,6 +104,7 @@ func (m cliModel) View() string {
 			strings.ToUpper(tea.KeyEsc.String()),
 		),
 	))
+
 	s.WriteString("\n\n")
 
 	return s.String()
@@ -120,11 +133,13 @@ func (m inputModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "enter":
 			m.input = m.textinput.Value()
+
 			return m, tea.Quit
 		}
 	}
 
 	m.textinput, cmd = m.textinput.Update(msg)
+
 	return m, cmd
 }
 

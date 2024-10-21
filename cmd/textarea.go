@@ -37,6 +37,7 @@ func (m textAreModel) Init() tea.Cmd {
 
 func (m textAreModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
+
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -61,11 +62,14 @@ func (m textAreModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// We handle errors just like any other message
 	case errMsg:
 		m.err = msg
+
 		return m, nil
 	}
 
 	m.textarea, cmd = m.textarea.Update(msg)
+
 	cmds = append(cmds, cmd)
+
 	return m, tea.Batch(cmds...)
 }
 

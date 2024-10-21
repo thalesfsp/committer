@@ -13,6 +13,9 @@ linters:
     - ireturn
     - testpackage
     - godox
+    - gomnd
+    - mnd
+    - gochecknoinits
   fast: true
 
 

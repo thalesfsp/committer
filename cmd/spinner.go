@@ -29,9 +29,12 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case spinner.TickMsg:
 		var cmd tea.Cmd
+
 		m.spinner, cmd = m.spinner.Update(msg)
+
 		return m, cmd
 	}
+
 	return m, nil
 }
 
@@ -44,7 +47,7 @@ var (
 	spinnerMutex   sync.Mutex
 )
 
-// spinnerStart starts the spinner with the given text
+// spinnerStart starts the spinner with the given text.
 func spinnerStart(text string) {
 	if !isDebugMode() {
 		return
@@ -58,7 +61,9 @@ func spinnerStart(text string) {
 	}
 
 	s := spinner.New()
+
 	s.Spinner = spinner.Dot
+
 	s.Style = spinnerStyle
 
 	model := spinnerModel{
@@ -75,7 +80,7 @@ func spinnerStart(text string) {
 	}()
 }
 
-// spinnerStop stops the spinner
+// spinnerStop stops the spinner.
 func spinnerStop() {
 	spinnerMutex.Lock()
 	defer spinnerMutex.Unlock()

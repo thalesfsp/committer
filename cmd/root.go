@@ -193,6 +193,7 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
+//nolint:lll
 func init() {
 	// Add the flags to your command
 	rootCmd.Flags().IntVarP(&chunkThreshold, "chunk-threshold", "c", 128000, "Chunk threshold in characters")

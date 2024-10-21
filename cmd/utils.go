@@ -23,43 +23,47 @@ func isDebugMode() bool {
 // isCurrentDirectoryGitRepo checks if the current directory is a Git repository.
 func isCurrentDirectoryGitRepo() bool {
 	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
+
 	var stderr bytes.Buffer
+
 	cmd.Stderr = &stderr
 
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		fmt.Fprint(os.Stderr, stderr.String())
 
 		return false
 	}
+
 	return true
 }
 
 // isDirty checks if there are any uncommitted changes.
 func isDirty() bool {
 	cmd := exec.Command("git", "diff", "--quiet")
+
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return true
 	}
+
 	return false
 }
 
 // hasStagedChanges checks if there are any staged changes.
 func hasStagedChanges() bool {
 	cmd := exec.Command("git", "diff", "--staged", "--quiet")
+
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		// If there are staged changes, git diff --quiet exits with status 1.
 		// So we return true without printing the error.
 		return true
 	}
+
 	return false
 }
 
@@ -135,40 +139,49 @@ func callLLM(
 // gitCommit commits the changes with the provided message.
 func gitCommit(message string) error {
 	cmd := exec.Command("git", "commit", "-m", message)
+
 	return runCommand(cmd)
 }
 
 // gitPush pushes the commits.
 func gitPush() error {
 	cmd := exec.Command("git", "push")
+
 	return runCommand(cmd)
 }
 
 // gitTag tags the commit with the provided tag name.
 func gitTag(tag string) error {
 	cmd := exec.Command("git", "tag", tag)
+
 	return runCommand(cmd)
 }
 
 // gitPushTags pushes the tags to the remote repository.
 func gitPushTags() error {
 	cmd := exec.Command("git", "push", "--tags")
+
 	return runCommand(cmd)
 }
 
 // runCommand executes a command and outputs errors to os.Stderr if any.
 func runCommand(cmd *exec.Cmd) error {
 	var stderr bytes.Buffer
+
 	cmd.Stderr = &stderr
 
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		fmt.Fprint(os.Stderr, stderr.String())
+
 		return err
 	}
+
 	return nil
 }
 
+// handleTryAgain handles the "Try again" choice.
+//
+//nolint:lll
 func handleTryAgain() string {
 	changeChoice := promptWithChoices("What would you like to change?", []string{
 		"Make more succinct",
@@ -213,7 +226,9 @@ For complex changes, summarize the overall impact rather than listing technical 
 
 func generateCommitMessageLoop(providerInUse provider.IProvider, stats string, chunks []string) (string, error) {
 	totalChunks := len(chunks)
+
 	additionalInstructions := ""
+
 	maxAttempts := 5 // Define a maximum number of attempts to prevent infinite loops
 
 	for attempt := 0; attempt < maxAttempts; attempt++ {
@@ -221,6 +236,7 @@ func generateCommitMessageLoop(providerInUse provider.IProvider, stats string, c
 			ctxWithTimeout, cancel := context.WithTimeout(context.Background(), llmAPICallTimeout)
 
 			spinnerStart("Generating commit message...")
+
 			message, err := generateCommitMessage(
 				ctxWithTimeout,
 				providerInUse,
@@ -228,7 +244,8 @@ func generateCommitMessageLoop(providerInUse provider.IProvider, stats string, c
 				i+1, totalChunks,
 				additionalInstructions,
 			)
-			cancel() // Cancel the context right after use
+
+			cancel()
 
 			if err != nil {
 				return "", fmt.Errorf("failed to generate commit message: %w", err)
@@ -250,6 +267,7 @@ func generateCommitMessageLoop(providerInUse provider.IProvider, stats string, c
 				return message, nil
 			case "Try again":
 				additionalInstructions = handleTryAgain()
+
 				break // Break inner loop to regenerate
 			case "Write commit message yourself":
 				content, err := commitMessageTextArea()
@@ -272,6 +290,8 @@ func generateCommitMessageLoop(providerInUse provider.IProvider, stats string, c
 }
 
 // generateCommitMessage generates a commit message using LLM API with additional instructions.
+//
+//nolint:lll
 func generateCommitMessage(
 	ctx context.Context,
 	providerInUse provider.IProvider,
@@ -316,14 +336,17 @@ Code Changes:
 }
 
 // commitMessageTextArea is a Tea model for the commit message text area.
+//
+//nolint:forcetypeassert
 func commitMessageTextArea() (string, error) {
 	p := tea.NewProgram(initializeTextAreModel())
+
 	m, err := p.Run()
 	if err != nil {
 		return "", err
 	}
 
-	// Check if the program finished due to Ctrl+Enter
+	// Check if the program finished due to Ctrl+Enter.
 	if m.(textAreModel).done {
 		return m.(textAreModel).textarea.Value(), nil
 	}
@@ -336,6 +359,7 @@ func promptYesNoTea(question string, defaultChoice bool) bool {
 	choices := []string{"Yes", "No"}
 
 	defaultIndex := 1
+
 	if defaultChoice {
 		defaultIndex = 0
 	}
@@ -379,6 +403,7 @@ func promptForInputTea(prompt string) string {
 	}
 
 	p := tea.NewProgram(m)
+
 	model, err := p.Run()
 	if err != nil {
 		cliLogger.Fatalln(ErrorCatalog.
@@ -390,6 +415,7 @@ func promptForInputTea(prompt string) string {
 	if m, ok := model.(inputModel); ok && m.input != "" {
 		return m.input
 	}
+
 	return ""
 }
 
@@ -401,6 +427,7 @@ func promptWithChoices(question string, choices []string) string {
 	}
 
 	p := tea.NewProgram(m)
+
 	model, err := p.Run()
 	if err != nil {
 		cliLogger.Fatalln(ErrorCatalog.
@@ -412,5 +439,6 @@ func promptWithChoices(question string, choices []string) string {
 	if m, ok := model.(cliModel); ok && m.choice != "" {
 		return m.choice
 	}
+
 	return ""
 }
