@@ -305,7 +305,121 @@ func generateCommitMessage(
 	var prompt string
 	if totalChunks > 1 {
 		// Diff is chunked
-		prompt = fmt.Sprintf(`Please generate a concise and descriptive commit message based on the following staged changes. Note that the diff is too big, so we chunked it into smaller parts:
+		prompt = fmt.Sprintf(`
+## Task
+
+Please generate a concise and descriptive commit message using the prescribed template, and based on the provided "Change Statistics" and "Code Changes".
+
+_Note that the diff is too big, so we chunked it into smaller parts!_
+
+## Commit Message Template
+
+[[[
+  <type>(<scope>): <subject>
+
+  <body>
+]]]
+
+### Template Fields
+
+#### Header (Required)
+
+- **type**: (Required) The type of change being made:
+  - feat: A new feature
+  - fix: A bug fix
+  - docs: Documentation changes
+  - style: Changes that don't affect code meaning (formatting, etc)
+  - refactor: Code changes that neither fix a bug nor add a feature
+  - perf: Performance improvements
+  - test: Adding or modifying tests
+  - chore: Changes to build process or auxiliary tools
+- **scope**: (Optional) The scope of the change (e.g., component name, module, etc)
+- **subject**: (Required) A brief description in imperative present tense
+
+#### Body
+
+- Explanation of what and why (not how)
+- Separate paragraphs with blank lines
+- Use bullet points for multiple points
+- Wrap at ~72 characters
+- No more change 240 characters
+
+### Examples
+
+#### Example 1
+
+[[[
+  feat(auth): add OAuth2 authentication
+
+  Implement OAuth2 authentication flow using Google and GitHub providers.
+  This allows users to sign in using their existing accounts instead of 
+  creating new credentials.
+
+  - Add OAuth2 middleware
+  - Create social login buttons
+  - Store provider tokens securely
+]]]
+
+#### Example 2
+
+[[[
+  fix(api): prevent race condition in payment processing
+
+  When multiple payment requests arrive simultaneously, ensure atomic
+  updates to prevent double-charging customers.
+]]]
+
+### Handling Multi-Type Changes
+
+If changes serve different purposes and can be separated, split them into multiple commits:
+
+Instead of:
+
+[[[
+  feat(user): add profile page and fix login bug
+]]]
+
+Do:
+
+[[[
+  feat(user): add profile page
+  fix(auth): correct login validation logic
+]]]
+
+If changes are tightly coupled, use the most significant type and detail other changes in the body:
+
+[[[
+  feat(auth): implement password reset flow
+
+  - Add password reset API endpoint
+  - Create email templates for reset notifications
+  - Add rate limiting to prevent abuse
+  - Fix validation in existing password change form
+  - Update security documentation
+
+  While this includes fixes and docs, the primary change is the new
+  password reset feature.
+]]]
+
+### Best Practices
+
+1. Keep subject lines under 50 characters
+2. Use imperative mood ("add", not "added" or "adds")
+3. Don't end subject line with period
+4. Start subject with lowercase letter
+5. Separate subject from body with blank line
+6. Use body to explain what and why vs. how
+7. When in doubt about type, consider the primary purpose of the change
+
+### Common Mistakes to Avoid
+
+- Vague messages ("fix bug", "update code")
+- Listing multiple unrelated changes
+- Including code or stack traces
+- Writing in past tense
+- Exceeding line length limits
+- Omitting context or motivation
+- Combining unrelated changes just to save time
 
 Change Statistics:
 %s
@@ -316,7 +430,119 @@ Chunk %d of %d:
 %s`, stats, chunkNumber, totalChunks, diff, additionalInstructions)
 	} else {
 		// Diff is not chunked; use standard prompt
-		prompt = fmt.Sprintf(`Please generate a concise and descriptive commit message based on the following staged changes:
+		prompt = fmt.Sprintf(`
+## Task
+
+Please generate a concise and descriptive commit message using the prescribed template, and based on the provided "Change Statistics" and "Code Changes".
+
+## Commit Message Template
+
+[[[
+  <type>(<scope>): <subject>
+
+  <body>
+]]]
+
+### Template Fields
+
+#### Header (Required)
+
+- **type**: (Required) The type of change being made:
+  - feat: A new feature
+  - fix: A bug fix
+  - docs: Documentation changes
+  - style: Changes that don't affect code meaning (formatting, etc)
+  - refactor: Code changes that neither fix a bug nor add a feature
+  - perf: Performance improvements
+  - test: Adding or modifying tests
+  - chore: Changes to build process or auxiliary tools
+- **scope**: (Optional) The scope of the change (e.g., component name, module, etc)
+- **subject**: (Required) A brief description in imperative present tense
+
+#### Body
+
+- Explanation of what and why (not how)
+- Separate paragraphs with blank lines
+- Use bullet points for multiple points
+- Wrap at ~72 characters
+- No more change 240 characters
+
+### Examples
+
+#### Example 1
+
+[[[
+  feat(auth): add OAuth2 authentication
+
+  Implement OAuth2 authentication flow using Google and GitHub providers.
+  This allows users to sign in using their existing accounts instead of 
+  creating new credentials.
+
+  - Add OAuth2 middleware
+  - Create social login buttons
+  - Store provider tokens securely
+]]]
+
+#### Example 2
+
+[[[
+  fix(api): prevent race condition in payment processing
+
+  When multiple payment requests arrive simultaneously, ensure atomic
+  updates to prevent double-charging customers.
+]]]
+
+### Handling Multi-Type Changes
+
+If changes serve different purposes and can be separated, split them into multiple commits:
+
+Instead of:
+
+[[[
+  feat(user): add profile page and fix login bug
+]]]
+
+Do:
+
+[[[
+  feat(user): add profile page
+  fix(auth): correct login validation logic
+]]]
+
+If changes are tightly coupled, use the most significant type and detail other changes in the body:
+
+[[[
+  feat(auth): implement password reset flow
+
+  - Add password reset API endpoint
+  - Create email templates for reset notifications
+  - Add rate limiting to prevent abuse
+  - Fix validation in existing password change form
+  - Update security documentation
+
+  While this includes fixes and docs, the primary change is the new
+  password reset feature.
+]]]
+
+### Best Practices
+
+1. Keep subject lines under 50 characters
+2. Use imperative mood ("add", not "added" or "adds")
+3. Don't end subject line with period
+4. Start subject with lowercase letter
+5. Separate subject from body with blank line
+6. Use body to explain what and why vs. how
+7. When in doubt about type, consider the primary purpose of the change
+
+### Common Mistakes to Avoid
+
+- Vague messages ("fix bug", "update code")
+- Listing multiple unrelated changes
+- Including code or stack traces
+- Writing in past tense
+- Exceeding line length limits
+- Omitting context or motivation
+- Combining unrelated changes just to save time
 
 Change Statistics:
 %s
