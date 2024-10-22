@@ -92,7 +92,8 @@ var rootCmd = &cobra.Command{
 			cliLogger.Fatalln(ErrorCatalog.MustGet(ErrInvalidProvider).New())
 		}
 
-		if !isDirty() {
+		// Should exit if there are no changes and git isn't dirty.
+		if !hasStagedChanges() && !isDirty() {
 			fmt.Println("Nothing to do, exiting...")
 
 			os.Exit(0)

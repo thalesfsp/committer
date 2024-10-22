@@ -16,6 +16,7 @@ const (
 	ErrNotGitRepo               = "ERR_NOT_GIT_REPO"                 // Required.
 	ErrFailedToInitTea          = "ERR_FAILED_TO_INIT_TEA"           // FailedTo.
 	ErrEmptyCommitMessage       = "ERR_EMPTY_COMMIT_MESSAGE"         // Missing.
+	ErrFailedToInitChunker      = "ERR_FAILED_TO_INIT_CHUNKER"       // FailedTo.
 )
 
 // ErrorCatalog is the error catalog for the CLI.
@@ -31,4 +32,5 @@ var ErrorCatalog = customerror.
 	MustSet(ErrInvalidProvider, "provider").
 	MustSet(ErrNotGitRepo, "current directory is not a git repository").
 	MustSet(ErrFailedToInitTea, "initialize Tea application").
-	MustSet(ErrEmptyCommitMessage, "commit message")
+	MustSet(ErrEmptyCommitMessage, "commit message").
+	MustSet(ErrFailedToInitChunker, "initialize chunker")

@@ -104,16 +104,19 @@ func getGitStats() (string, error) {
 
 // chunkDiff chunks the diff if it's too big.
 func chunkDiff(maxChars int, diff string) ([]string, error) {
+	// Should do nothing if the diff is smaller than the threshold.
 	if len(diff) <= maxChars {
 		return []string{diff}, nil
 	}
 
-	splitter := NewTokenSplitter()
+	splitter := NewTokenSplitter(maxChars)
 
 	chunks, err := splitter.SplitText(diff)
 	if err != nil {
 		return nil, ErrorCatalog.MustGet(ErrFailedToChunkDiff, customerror.WithError(err))
 	}
+
+	cliLogger.Tracelnf("Chunks: %v MaxChars: %v", len(chunks), maxChars)
 
 	return chunks, nil
 }

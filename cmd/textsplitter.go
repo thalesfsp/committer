@@ -29,7 +29,6 @@ package cmd
 
 import (
 	"github.com/pkoukk/tiktoken-go"
-	"github.com/thalesfsp/committer/internal/shared"
 	"github.com/thalesfsp/customerror"
 )
 
@@ -130,8 +129,8 @@ func (s TokenSplitter) SplitText(text string) ([]string, error) {
 	// Initialize the tokenizer based on configuration.
 	tk, err := s.initializeTokenizer()
 	if err != nil {
-		return nil, shared.ErrorCatalog.MustGet(
-			shared.ErrFailedToInitChunker,
+		return nil, ErrorCatalog.MustGet(
+			ErrFailedToInitChunker,
 			customerror.WithError(err),
 		).NewFailedToError()
 	}
