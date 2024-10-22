@@ -1,4 +1,4 @@
-package cmd
+package tea
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textarea"
-	tea "github.com/charmbracelet/bubbletea"
+	bt "github.com/charmbracelet/bubbletea"
 )
 
 type errMsg error
@@ -31,26 +31,26 @@ func initializeTextAreModel() textAreModel {
 	}
 }
 
-func (m textAreModel) Init() tea.Cmd {
+func (m textAreModel) Init() bt.Cmd {
 	return textarea.Blink
 }
 
-func (m textAreModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmds []tea.Cmd
+func (m textAreModel) Update(msg bt.Msg) (bt.Model, bt.Cmd) {
+	var cmds []bt.Cmd
 
-	var cmd tea.Cmd
+	var cmd bt.Cmd
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case bt.KeyMsg:
 		switch msg.Type {
-		case tea.KeyCtrlC:
+		case bt.KeyCtrlC:
 			fmt.Println("Nothing to do, exiting...")
 
 			os.Exit(0)
-		case tea.KeyEscape:
+		case bt.KeyEscape:
 			m.done = true
 
-			return m, tea.Quit
+			return m, bt.Quit
 		default:
 			if !m.textarea.Focused() {
 				cmd = m.textarea.Focus()
@@ -70,7 +70,7 @@ func (m textAreModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	cmds = append(cmds, cmd)
 
-	return m, tea.Batch(cmds...)
+	return m, bt.Batch(cmds...)
 }
 
 func (m textAreModel) View() string {
@@ -81,11 +81,33 @@ func (m textAreModel) View() string {
 	return fmt.Sprintf(
 		"%s\n\n%s",
 		m.textarea.View(),
-		hintStyle.Render(
+		HintStyle.Render(
 			fmt.Sprintf(
 				`(Press %s when you are done)`,
-				strings.ToUpper(tea.KeyEsc.String()),
+				strings.ToUpper(bt.KeyEsc.String()),
 			),
 		),
 	) + "\n\n"
+}
+
+// NewMessageTextArea provides a text area for manual commit message entry.
+//
+// Returns:
+//   - string: The entered commit message.
+//   - error: Error if text area initialization fails.
+//
+//nolint:forcetypeassert
+func NewMessageTextArea() (string, error) {
+	p := bt.NewProgram(initializeTextAreModel())
+
+	m, err := p.Run()
+	if err != nil {
+		return "", err
+	}
+
+	if m.(textAreModel).done {
+		return m.(textAreModel).textarea.Value(), nil
+	}
+
+	return "", nil
 }

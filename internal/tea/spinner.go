@@ -1,11 +1,11 @@
-package cmd
+package tea
 
 import (
 	"fmt"
 	"sync"
 
 	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
+	bt "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
@@ -16,19 +16,19 @@ type spinnerModel struct {
 	text    string
 }
 
-func (m spinnerModel) Init() tea.Cmd {
+func (m spinnerModel) Init() bt.Cmd {
 	return m.spinner.Tick
 }
 
-func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m spinnerModel) Update(msg bt.Msg) (bt.Model, bt.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case bt.KeyMsg:
 		switch msg.String() {
 		case "q", "ctrl+c", "esc":
-			return m, tea.Quit
+			return m, bt.Quit
 		}
 	case spinner.TickMsg:
-		var cmd tea.Cmd
+		var cmd bt.Cmd
 
 		m.spinner, cmd = m.spinner.Update(msg)
 
@@ -39,19 +39,19 @@ func (m spinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m spinnerModel) View() string {
-	return choiceStyle.Render(fmt.Sprintf("%s %s\n", m.spinner.View(), m.text))
+	return ChoiceStyle.Render(fmt.Sprintf("%s %s\n", m.spinner.View(), m.text))
 }
 
 var (
-	spinnerProgram *tea.Program
+	spinnerProgram *bt.Program
 	spinnerMutex   sync.Mutex
 )
 
-// spinnerStart starts the spinner with the given text.
-func spinnerStart(text string) {
-	if !isDebugMode() {
-		return
-	}
+// SpinnerStart starts the spinner with the given text.
+func SpinnerStart(text string) {
+	// if !isDebugMode() {
+	// 	return
+	// }
 
 	spinnerMutex.Lock()
 	defer spinnerMutex.Unlock()
@@ -71,22 +71,23 @@ func spinnerStart(text string) {
 		text:    text,
 	}
 
-	spinnerProgram = tea.NewProgram(model)
+	spinnerProgram = bt.NewProgram(model)
 
 	go func() {
 		if _, err := spinnerProgram.Run(); err != nil {
-			fmt.Println("Error running spinner:", err)
+			panic("Error running spinner:" + err.Error())
 		}
 	}()
 }
 
-// spinnerStop stops the spinner.
-func spinnerStop() {
+// SpinnerStop stops the spinner.
+func SpinnerStop() {
 	spinnerMutex.Lock()
 	defer spinnerMutex.Unlock()
 
 	if spinnerProgram != nil {
 		spinnerProgram.Quit()
+
 		spinnerProgram = nil
 	}
 }
