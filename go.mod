@@ -8,7 +8,6 @@ require (
 	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/pkoukk/tiktoken-go v0.1.7
 	github.com/spf13/cobra v1.8.1
-	github.com/thalesfsp/concurrentloop v1.3.2
 	github.com/thalesfsp/customerror v1.2.7
 	github.com/thalesfsp/inference v0.0.3
 	github.com/thalesfsp/sypl v1.9.18
@@ -84,6 +83,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sourcegraph/jsonrpc2 v0.2.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/thalesfsp/concurrentloop v1.3.2 // indirect
 	github.com/thalesfsp/configurer v1.3.22 // indirect
 	github.com/thalesfsp/godotenv v1.4.2 // indirect
 	github.com/thalesfsp/httpclient v1.2.7 // indirect
