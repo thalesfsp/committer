@@ -1,5 +1,3 @@
-// root.go
-
 package cmd
 
 import (
@@ -23,18 +21,30 @@ import (
 	"github.com/thalesfsp/sypl/processor"
 )
 
-// Flags.
+// CLI tool configuration flags.
 var (
-	chunkThreshold    int
+	// Threshold for how large a diff chunk can be before splitting.
+	chunkThreshold int
+
+	// Timeout duration for LLM API calls.
 	llmAPICallTimeout time.Duration
-	llmModel          string
-	llmProvider       string
+
+	// The model to be used for LLM.
+	llmModel string
+
+	// The provider for the LLM service.
+	llmProvider string
 )
 
-// CLI logger.
-var cliLogger = sypl.NewDefault(shared.Name, level.Info, processor.Tagger(shared.Type))
+// Logger setup for the CLI with default settings.
+var cliLogger = sypl.NewDefault(
+	shared.Name,
+	level.Info,
+	processor.Tagger(shared.Type),
+)
 
-// rootCmd represents the base command.
+// rootCmd is the primary entry point for the CLI tool, representing the base
+// command.
 var rootCmd = &cobra.Command{
 	Use:   shared.Name,
 	Short: "A CLI tool to generate meaningful commit messages",
@@ -52,16 +62,18 @@ Providers:
 	Example: `  Use Anthropic provider with their most capable model.
   $ committer -p anthropic -m claude-3-5-sonnet-20240620`,
 	Run: func(_ *cobra.Command, _ []string) {
-		// For debug purposes.
+		// Check if debug mode is enabled and set a breakpoint if so.
 		if shared.IsDebugMode() {
 			cliLogger.Breakpoint(shared.Name)
 		}
 
-		// Check if the current directory is a Git repository.
+		// Exit if the current directory is not a Git repository.
 		if !git.IsCurrentDirectoryGitRepo() {
-			cliLogger.Fatalln(errorcatalog.MustGet(errorcatalog.ErrNotGitRepo).New())
+			cliLogger.Fatalln(errorcatalog.MustGet(
+				errorcatalog.ErrNotGitRepo).New())
 		}
 
+		// Initialize the LLM provider using configuration provided by the user.
 		providerInUse, err := provider.InitializeLLMProvider(
 			llmProvider,
 			llmModel,
@@ -70,14 +82,15 @@ Providers:
 			cliLogger.Fatalln(err)
 		}
 
-		// Should exit if there are no changes and git isn't dirty.
+		// If there are no changes to be committed, exit the process.
 		if !git.HasStagedChanges() && !git.IsDirty() {
 			shared.NothingToDo()
 		}
 
-		// Check if there are staged changes.
+		// Prompt the user to stage changes if none are staged.
 		if !git.HasStagedChanges() {
-			if tui.MustPromptYesNoTea("Would you like to add all changes?", false) {
+			if tui.MustPromptYesNoTea(
+				"Would you like to add all changes?", false) {
 				tui.SprinnerStart("Adding files...")
 
 				if err := git.GitAddAll(); err != nil {
@@ -97,7 +110,7 @@ Providers:
 			}
 		}
 
-		// Get the diff and stats.
+		// Retrieve and process the Git diff and stats.
 		tui.SprinnerStart("Getting diff...")
 
 		diff, err := git.GetGitDiff()
@@ -116,7 +129,7 @@ Providers:
 
 		tui.SprinnerStop()
 
-		// Chunking if diff is too big.
+		// If needed, chunk the Git diff based on the defined threshold.
 		tui.SprinnerStart("Generating chunks...")
 
 		chunks, err := provider.ChunkDiff(chunkThreshold, diff)
@@ -126,6 +139,7 @@ Providers:
 
 		tui.SprinnerStop()
 
+		// Generate the commit message by communicating with the LLM.
 		commitMessage, err := provider.GenerateCommitMessageLoop(
 			providerInUse,
 			llmAPICallTimeout,
@@ -134,11 +148,13 @@ Providers:
 			cliLogger.Fatalln(err)
 		}
 
+		// Handle the scenario of an empty commit message.
 		if commitMessage == "" {
-			cliLogger.Fatalln(errorcatalog.MustGet(errorcatalog.ErrEmptyCommitMessage).NewMissingError())
+			cliLogger.Fatalln(errorcatalog.MustGet(
+				errorcatalog.ErrEmptyCommitMessage).NewMissingError())
 		}
 
-		// Commit changes.
+		// Commit the changes using the generated commit message.
 		tui.SprinnerStart("Committing changes...")
 
 		if err := git.GitCommit(commitMessage); err != nil {
@@ -147,7 +163,7 @@ Providers:
 
 		tui.SprinnerStop()
 
-		// Push changes.
+		// Check with the user if they want to push their commits.
 		tui.SprinnerStart("Pushing changes...")
 
 		if tui.MustPromptYesNoTea("Would you like to push the commits?", true) {
@@ -158,7 +174,7 @@ Providers:
 
 		tui.SprinnerStop()
 
-		// Tag changes.
+		// Optionally tag the commit if the user chooses.
 		tui.SprinnerStart("Tagging changes...")
 
 		if tui.MustPromptYesNoTea("Would you like to tag the commit?", false) {
@@ -174,22 +190,27 @@ Providers:
 
 		tui.SprinnerStop()
 
+		// Gracefully exit the application.
 		os.Exit(0)
 	},
 }
 
-// Execute adds all child commands to the root command.
+// Execute is called by main to run the root command and setup the CLI.
 func Execute() error {
 	return rootCmd.Execute()
 }
 
-//nolint:lll
+// init is used to initialize the command and attach flags to it.
 func init() {
-	// Add the flags to your command
-	rootCmd.Flags().IntVarP(&chunkThreshold, "chunk-threshold", "c", 128000, "Chunk threshold in characters")
-	rootCmd.Flags().DurationVarP(&llmAPICallTimeout, "llm-api-call-timeout", "t", 30*time.Second, "LLM API call timeout")
-	rootCmd.Flags().StringVarP(&llmModel, "model", "m", "gpt-4o", "Model to be used by the provider for generating commit messages")
+	// Configure flags for chunk threshold, API call timeout, model, and provider.
+	rootCmd.Flags().IntVarP(&chunkThreshold, "chunk-threshold", "c", 128000,
+		"Chunk threshold in characters")
+	rootCmd.Flags().DurationVarP(&llmAPICallTimeout,
+		"llm-api-call-timeout", "t", 30*time.Second, "LLM API call timeout")
+	rootCmd.Flags().StringVarP(&llmModel, "model", "m",
+		"gpt-4o", "Model to be used by the provider for generating commit messages")
 
+	// Construct the message detailing which providers are allowed.
 	llmProviderMsg := fmt.Sprintf(
 		"LLM providers, allowed: %s",
 		strings.Join([]string{
@@ -199,5 +220,7 @@ func init() {
 		}, ", "),
 	)
 
-	rootCmd.Flags().StringVarP(&llmProvider, "provider", "p", openai.Name, llmProviderMsg)
+	// Assign the provider flag, enabling selection of the desired LLM provider.
+	rootCmd.Flags().StringVarP(&llmProvider, "provider", "p",
+		openai.Name, llmProviderMsg)
 }
