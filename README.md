@@ -1,21 +1,20 @@
 # committer
 
-Committer CLI is a command-line tool designed to streamline the process of generating meaningful commit messages. It leverages large language models (LLMs) to automatically create concise and descriptive commit messages based on the changes staged in a Git repository.
+Committer is a beautiful command-line tool (CLI) designed to leverage large language models (LLMs) to streamline the process of generating meaningful, concise, and descriptive commit messages.
 
 ## Features
 
-- **Generate Commit Messages**: Automatically generates meaningful commit messages using LLMs based on staged Git changes.
-- **Interactive CLI**: Provides an interactive command-line interface to guide users through the commit process.
-- **Git Integration**: Checks for uncommitted changes and stages files before committing.
-- **Chunking Large Diffs**: Splits large diffs into chunks for efficient processing and message generation.
-- **Customizable Prompts**: Allows users to customize the message generation with additional instructions.
-- **Retry Mechanism**: Offers options to regenerate commit messages or manually edit them.
-- **Push and Tag Commits**: Capable of pushing commits and tagging versions in the Git repository.
-- **Provider Flexibility**: Supports multiple LLM providers, including OpenAI, Anthropic, and Ollama.
+- **Generate Commit Messages**: Automatically generates commit messages using LLMs based on staged changes.
+- **Provider Flexibility**: Supports multiple LLM providers, including OpenAI, Anthropic, and Ollama (offline).
+- **Interactive CLI**: Provides an interactive TUI to guide users through the process.
+- **Retry Mechanism**: Offers options to regenerate commit messages, change the prompt on-the-fly by making it more or less technical or any additional custom instruction, or manually edit that.
+- **Chunking Large Diffs**: Smart chunking properly splits large diffs into chunks for efficient processing, and message generation.
+- **Git Flow**: Capable of seamlessly stage files, commit, push, and tag changes.
+- **Native Git Integration**: Built-in safe sanity checks, importantly, it respect `.gitignore`!
 
 ## Architecture Overview
 
-The application is built using Go and utilizes the Cobra library for CLI interactions. It integrates with Git for version control operations and uses various LLM providers for generating commit messages. The codebase incorporates the Bubble Tea framework for interactive CLI components and uses Lipgloss for styling. The CLI is designed to be extensible, supporting multiple LLM providers via an interface pattern.
+The application is built using Go and utilizes the Cobra library for CLI interactions. It integrates with Git for version control operations and uses various LLM providers for generating commit messages. It also incorporates the Bubble Tea framework for TUI providing interactive CLI components and uses Lipgloss for styling. The CLI is designed to be extensible, supporting multiple LLM providers via a standard interface pattern.
 
 ## Install
 
@@ -37,9 +36,12 @@ Example:
 
 ## Usage
 
-### CLI
+1. Set the API key for the LLM provider, for example, `OPENAI_API_KEY`.
+2. Run `$ committer`
 
-`$ committer --help`
+### More Information
+
+Checkout our well-crafted help by running `$ committer --help`.
 
 ## Contributing
 
