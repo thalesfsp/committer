@@ -9,181 +9,170 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/thalesfsp/committer/internal/errorcatalog"
+	"github.com/thalesfsp/committer/internal/git"
+	"github.com/thalesfsp/committer/internal/provider"
+	"github.com/thalesfsp/committer/internal/shared"
+	"github.com/thalesfsp/committer/internal/tui"
 	"github.com/thalesfsp/customerror"
 	"github.com/thalesfsp/inference/anthropic"
 	"github.com/thalesfsp/inference/ollama"
 	"github.com/thalesfsp/inference/openai"
-	"github.com/thalesfsp/inference/provider"
 	"github.com/thalesfsp/sypl"
 	"github.com/thalesfsp/sypl/level"
 	"github.com/thalesfsp/sypl/processor"
-)
-
-// Constants for the choices.
-const (
-	Accept        = "Accept"
-	Edit          = "Edit"
-	Exit          = "Exit"
-	Regenerate    = "Regenerate"
-	YesAndProceed = "Yes and proceed"
-	NoAndProceed  = "No and proceed"
-	AddAllFiles   = "Add all files"
-	Proceed       = "Proceed"
-)
-
-// Name and Type of the CLI.
-const (
-	Name = "committer"
-	Type = "cli"
 )
 
 // Flags.
 var (
 	chunkThreshold    int
 	llmAPICallTimeout time.Duration
+	llmModel          string
 	llmProvider       string
-	model             string
 )
 
 // CLI logger.
-var cliLogger = sypl.NewDefault(Name, level.Info, processor.Tagger(Type))
+var cliLogger = sypl.NewDefault(shared.Name, level.Info, processor.Tagger(shared.Type))
 
 // rootCmd represents the base command.
 var rootCmd = &cobra.Command{
-	Use:   Name,
+	Use:   shared.Name,
 	Short: "A CLI tool to generate meaningful commit messages",
-	Run: func(cmd *cobra.Command, args []string) {
+	Long: `Overview:
+  Committer is a nimble and powerful CLI that streamline the process
+  of generating meaningful commit messages. It leverages large language
+  models (LLMs) to automatically create concise and descriptive commit
+  messages based on the changes staged in a Git repository.
+
+Providers:
+  Each provider has their own requirements. OpenAI requires the
+  OPENAI_API_KEY env var to be set while Claude (Anthropic)
+  requires the ANTHROPIC_API_KEY env var. For the Ollama provider
+  you can set its endpoint by setting the OLLAMA_ENDPOINT env var.`,
+	Example: `  Use Anthropic provider with their most capable model.
+  $ committer -p anthropic -m claude-3-5-sonnet-20240620`,
+	Run: func(_ *cobra.Command, _ []string) {
 		// For debug purposes.
-		if isDebugMode() {
-			cliLogger.Breakpoint(Name)
+		if shared.IsDebugMode() {
+			cliLogger.Breakpoint(shared.Name)
 		}
 
 		// Check if the current directory is a Git repository.
-		if !isCurrentDirectoryGitRepo() {
-			cliLogger.Fatalln(ErrorCatalog.MustGet(ErrNotGitRepo).New())
+		if !git.IsCurrentDirectoryGitRepo() {
+			cliLogger.Fatalln(errorcatalog.MustGet(errorcatalog.ErrNotGitRepo).New())
 		}
 
-		// Provider definition.
-		var providerInUse provider.IProvider
-
-		switch llmProvider {
-		case openai.Name:
-			oai, err := openai.NewDefault()
-			if err != nil {
-				cliLogger.Fatalln(ErrorCatalog.MustGet(ErrFailedToSetupLLM).New())
-			}
-
-			providerInUse = oai
-		case anthropic.Name:
-			anth, err := anthropic.NewDefault()
-			if err != nil {
-				cliLogger.Fatalln(ErrorCatalog.MustGet(ErrFailedToSetupLLM).New())
-			}
-
-			providerInUse = anth
-		case ollama.Name:
-			oll, err := ollama.NewDefault()
-			if err != nil {
-				cliLogger.Fatalln(ErrorCatalog.MustGet(ErrFailedToSetupLLM).New())
-			}
-
-			providerInUse = oll
-		default:
-			cliLogger.Fatalln(ErrorCatalog.MustGet(ErrInvalidProvider).New())
+		providerInUse, err := provider.InitializeLLMProvider(
+			llmProvider,
+			llmModel,
+		)
+		if err != nil {
+			cliLogger.Fatalln(err)
 		}
 
 		// Should exit if there are no changes and git isn't dirty.
-		if !hasStagedChanges() && !isDirty() {
-			fmt.Println("Nothing to do, exiting...")
-
-			os.Exit(0)
+		if !git.HasStagedChanges() && !git.IsDirty() {
+			shared.NothingToDo()
 		}
 
 		// Check if there are staged changes.
-		if !hasStagedChanges() {
-			if promptYesNoTea("Would you like to add all changes?", false) {
-				spinnerStart("Adding files...")
-				if err := gitAddAll(); err != nil {
-					spinnerStop()
+		if !git.HasStagedChanges() {
+			if tui.MustPromptYesNoTea("Would you like to add all changes?", false) {
+				tui.SprinnerStart("Adding files...")
+
+				if err := git.GitAddAll(); err != nil {
+					tui.SprinnerStop()
 
 					cliLogger.Fatalln(
-						ErrorCatalog.MustGet(
-							ErrFailedToStageFiles,
+						errorcatalog.MustGet(
+							errorcatalog.ErrFailedToStageFiles,
 							customerror.WithError(err),
 						),
 					)
 				}
 
-				spinnerStop()
+				tui.SprinnerStop()
 			} else {
-				fmt.Println("Nothing to do, exiting...")
-
-				os.Exit(0)
+				shared.NothingToDo()
 			}
 		}
 
 		// Get the diff and stats.
-		spinnerStart("Getting diff...")
-		diff, err := getGitDiff()
-		if err != nil {
-			cliLogger.Fatalln(err)
-		}
-		spinnerStop()
+		tui.SprinnerStart("Getting diff...")
 
-		spinnerStart("Getting stats...")
-		stats, err := getGitStats()
+		diff, err := git.GetGitDiff()
 		if err != nil {
 			cliLogger.Fatalln(err)
 		}
-		spinnerStop()
+
+		tui.SprinnerStop()
+
+		tui.SprinnerStart("Getting stats...")
+
+		stats, err := git.GetGitStats()
+		if err != nil {
+			cliLogger.Fatalln(err)
+		}
+
+		tui.SprinnerStop()
 
 		// Chunking if diff is too big.
-		spinnerStart("Generating chunks...")
-		chunks, err := chunkDiff(chunkThreshold, diff)
+		tui.SprinnerStart("Generating chunks...")
+
+		chunks, err := provider.ChunkDiff(chunkThreshold, diff)
 		if err != nil {
 			cliLogger.Fatalln(err)
 		}
-		spinnerStop()
 
-		// Generate commit message.
-		commitMessage, err := generateCommitMessageLoop(providerInUse, stats, chunks)
+		tui.SprinnerStop()
+
+		commitMessage, err := provider.GenerateCommitMessageLoop(
+			providerInUse,
+			llmAPICallTimeout,
+			stats, chunks)
 		if err != nil {
 			cliLogger.Fatalln(err)
 		}
 
 		if commitMessage == "" {
-			cliLogger.Fatalln(ErrorCatalog.MustGet(ErrEmptyCommitMessage).NewMissingError())
+			cliLogger.Fatalln(errorcatalog.MustGet(errorcatalog.ErrEmptyCommitMessage).NewMissingError())
 		}
 
 		// Commit changes.
-		spinnerStart("Committing changes...")
-		if err := gitCommit(commitMessage); err != nil {
+		tui.SprinnerStart("Committing changes...")
+
+		if err := git.GitCommit(commitMessage); err != nil {
 			cliLogger.Fatalln(err)
 		}
-		spinnerStop()
+
+		tui.SprinnerStop()
 
 		// Push changes.
-		spinnerStart("Pushing changes...")
-		if promptYesNoTea("Would you like to push the commits?", true) {
-			if err := gitPush(); err != nil {
+		tui.SprinnerStart("Pushing changes...")
+
+		if tui.MustPromptYesNoTea("Would you like to push the commits?", true) {
+			if err := git.GitPush(); err != nil {
 				cliLogger.Fatalln(err)
 			}
 		}
-		spinnerStop()
+
+		tui.SprinnerStop()
 
 		// Tag changes.
-		spinnerStart("Tagging changes...")
-		if promptYesNoTea("Would you like to tag the commit?", false) {
-			tag := promptForInputTea("Enter the tag name:")
-			if err := gitTag(tag); err != nil {
+		tui.SprinnerStart("Tagging changes...")
+
+		if tui.MustPromptYesNoTea("Would you like to tag the commit?", false) {
+			tag := tui.MustPromptForInputTea("Enter the tag name:")
+			if err := git.GitTag(tag); err != nil {
 				cliLogger.Fatalln(err)
 			}
 
-			if err := gitPushTags(); err != nil {
+			if err := git.GitPushTags(); err != nil {
 				cliLogger.Fatalln(err)
 			}
 		}
-		spinnerStop()
+
+		tui.SprinnerStop()
 
 		os.Exit(0)
 	},
@@ -198,8 +187,8 @@ func Execute() error {
 func init() {
 	// Add the flags to your command
 	rootCmd.Flags().IntVarP(&chunkThreshold, "chunk-threshold", "c", 128000, "Chunk threshold in characters")
-	rootCmd.Flags().DurationVarP(&llmAPICallTimeout, "llm-api-call-timeout", "t", 15*time.Second, "LLM API call timeout")
-	rootCmd.Flags().StringVarP(&model, "model", "m", "gpt-4o", "Model to be used by the provider for generating commit messages")
+	rootCmd.Flags().DurationVarP(&llmAPICallTimeout, "llm-api-call-timeout", "t", 30*time.Second, "LLM API call timeout")
+	rootCmd.Flags().StringVarP(&llmModel, "model", "m", "gpt-4o", "Model to be used by the provider for generating commit messages")
 
 	llmProviderMsg := fmt.Sprintf(
 		"LLM providers, allowed: %s",
@@ -207,7 +196,7 @@ func init() {
 			openai.Name,
 			anthropic.Name,
 			ollama.Name,
-		}, ","),
+		}, ", "),
 	)
 
 	rootCmd.Flags().StringVarP(&llmProvider, "provider", "p", openai.Name, llmProviderMsg)

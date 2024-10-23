@@ -35,25 +35,11 @@ Example:
 
 `curl -s https://raw.githubusercontent.com/thalesfsp/committer/main/resources/install.sh | BIN_DIR=/usr/local/bin VERSION=v1.3.17 sh`
 
-### Programmatically
-
-Install dependency:
-
-`go get -u github.com/thalesfsp/committer`
-
 ## Usage
 
 ### CLI
 
 `$ committer --help`
-
-### Programmatically
-
-See `*_test.go` files for examples.
-
-### Documentation
-
-Run `$ make doc` or check out [online](https://pkg.go.dev/github.com/thalesfsp/committer).
 
 ## Contributing
 
@@ -63,13 +49,3 @@ Run `$ make doc` or check out [online](https://pkg.go.dev/github.com/thalesfsp/c
 4. Make changes following the same standards as the project
 5. Run `make ci`
 6. Create a merge request
-
-### Release flow
-
-1. Update [CHANGELOG](CHANGELOG.md) accordingly.
-2. Once changes from MR are merged.
-3. Just tag. Don't need to create a release, it's automatically created by CI.
-
-## Roadmap
-
-Check out [CHANGELOG](CHANGELOG.md).
