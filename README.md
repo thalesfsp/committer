@@ -5,7 +5,7 @@ Committer is a beautiful command-line tool (CLI) designed to leverage large lang
 ## Features
 
 - **Generate Commit Messages**: Automatically generates commit messages using LLMs based on staged changes.
-- **Provider Flexibility**: Supports multiple LLM providers, including OpenAI, Anthropic, and Ollama (offline).
+- **Provider Flexibility**: Supports multiple LLM providers, including OpenAI, Anthropic, Ollama (offline), and Hugging Face.
 - **Interactive CLI**: Provides an interactive TUI to guide users through the process.
 - **Retry Mechanism**: Offers options to regenerate commit messages, change the prompt on-the-fly by making it more or less technical or any additional custom instruction, or manually edit that.
 - **Chunking Large Diffs**: Smart chunking properly splits large diffs into chunks for efficient processing, and message generation.

@@ -2,8 +2,8 @@
 # Params.
 ###
 
-APP_NAME := "committer"
-BIN_NAME := $(APP_NAME)
+PROJECT_NAME := "committer"
+BIN_NAME := $(PROJECT_NAME)
 BIN_DIR := bin
 BIN_PATH := $(BIN_DIR)/$(BIN_NAME)
 
@@ -30,7 +30,7 @@ ifndef HAS_GODOC
 	@echo "Could not find godoc, installing it"
 	@go install golang.org/x/tools/cmd/godoc@latest
 endif
-	@echo "Open http://localhost:6060/pkg/github.com/thalesfsp/committer/ in your browser\n"
+	@echo "Open localhost:6060/pkg/github.com/thalesfsp/$(PROJECT_FULL_NAME)/ in your browser\n"
 	@godoc -http :6060
 
 lint:
