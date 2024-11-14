@@ -36,8 +36,12 @@ Example:
 
 ## Usage
 
-1. Set the API key for the LLM provider, for example, `OPENAI_API_KEY`.
+1. Set the API key for the LLM provider in the environment variable, example: `export OPENAI_API_KEY=sk-...` 
+
+_Note: Update your shell (Fish, Bash, ZSH) config to persiste the change_
+
 2. Run `$ committer`
+3. Happy work!
 
 ### More Information
 
