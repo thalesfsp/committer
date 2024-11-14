@@ -14,6 +14,7 @@ import (
 	"github.com/thalesfsp/committer/internal/tui"
 	"github.com/thalesfsp/customerror"
 	"github.com/thalesfsp/inference/anthropic"
+	"github.com/thalesfsp/inference/huggingface"
 	"github.com/thalesfsp/inference/ollama"
 	"github.com/thalesfsp/inference/openai"
 	"github.com/thalesfsp/sypl"
@@ -58,9 +59,14 @@ Providers:
   Each provider has their own requirements. OpenAI requires the
   OPENAI_API_KEY env var to be set while Claude (Anthropic)
   requires the ANTHROPIC_API_KEY env var. For the Ollama provider
-  you can set its endpoint by setting the OLLAMA_ENDPOINT env var.`,
+  you can set its endpoint by setting the OLLAMA_ENDPOINT env var.
+  Hugging Face provider requires HUGGINGFACE_API_KEY env var.`,
 	Example: `  Use Anthropic provider with their most capable model.
-  $ committer -p anthropic -m claude-3-5-sonnet-20240620`,
+  $ committer -p anthropic -m claude-3-5-sonnet-20240620
+  
+  Use Hugging Face provider with Qwen/Qwen2.5-Coder-32B-Instruct
+  $ committer -p huggingface -m Qwen/Qwen2.5-Coder-32B-Instruct
+  `,
 	Run: func(_ *cobra.Command, _ []string) {
 		// Check if debug mode is enabled and set a breakpoint if so.
 		if shared.IsDebugMode() {
@@ -217,6 +223,7 @@ func init() {
 			openai.Name,
 			anthropic.Name,
 			ollama.Name,
+			huggingface.Name,
 		}, ", "),
 	)
 

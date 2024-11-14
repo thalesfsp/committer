@@ -12,6 +12,7 @@ import (
 	"github.com/thalesfsp/committer/internal/tui"
 	"github.com/thalesfsp/customerror"
 	"github.com/thalesfsp/inference/anthropic"
+	"github.com/thalesfsp/inference/huggingface"
 	"github.com/thalesfsp/inference/ollama"
 	"github.com/thalesfsp/inference/openai"
 	"github.com/thalesfsp/inference/provider"
@@ -49,6 +50,13 @@ func InitializeLLMProvider(
 		}
 
 		providerInUse = oll
+	case huggingface.Name:
+		hf, err := huggingface.NewDefault(provider.WithDefaulModel(llmModel))
+		if err != nil {
+			return nil, errorcatalog.MustGet(errorcatalog.ErrFailedToSetupLLM).New()
+		}
+
+		providerInUse = hf
 	default:
 		return nil, errorcatalog.MustGet(errorcatalog.ErrInvalidProvider).New()
 	}
