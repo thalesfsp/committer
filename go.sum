@@ -248,6 +248,8 @@ github.com/thalesfsp/httpclient/v2 v2.0.1 h1:Te1ouJo/wPjjlxZEQTBOuCcGiWLJffwaPEz
 github.com/thalesfsp/httpclient/v2 v2.0.1/go.mod h1:txblSCREf17cpPDwwVK8vqaoNZrM+KhEqsU/wpfQYso=
 github.com/thalesfsp/inference v0.0.3 h1:SlR0ZxqnFDdqG569BYdNhosqsdnCk2u2WPphBg27dDk=
 github.com/thalesfsp/inference v0.0.3/go.mod h1:K0N+5cBt3nEMmdhnQM6qICXthzgdZgFYwQ1PW8MbixY=
+github.com/thalesfsp/inference v0.0.8 h1:996qlkd7l1v7QMV0eQ12MzN8KK2nZYPY6Z4JVxiEblA=
+github.com/thalesfsp/inference v0.0.8/go.mod h1:K0N+5cBt3nEMmdhnQM6qICXthzgdZgFYwQ1PW8MbixY=
 github.com/thalesfsp/mole v1.0.2 h1:TaZafQY7xiZ7sDEJuoMP1hlCciOKUjG5H0zSqwaR7D0=
 github.com/thalesfsp/mole v1.0.2/go.mod h1:myfYopN7hsFvENADHZiL8GFR0XmofAtnv6mPTPml29M=
 github.com/thalesfsp/randomness v0.0.9 h1:RMyuxHtcARBdghmONa/zsAlyssJCqiEk6JS2fk7ewow=

@@ -9,7 +9,7 @@ require (
 	github.com/pkoukk/tiktoken-go v0.1.7
 	github.com/spf13/cobra v1.8.1
 	github.com/thalesfsp/customerror v1.2.7
-	github.com/thalesfsp/inference v0.0.3
+	github.com/thalesfsp/inference v0.0.8
 	github.com/thalesfsp/sypl v1.9.18
 )
 
