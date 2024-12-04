@@ -1,5 +1,7 @@
 # committer
 
+![molonelaveh_A_futuristic_command-line_interface_terminal_floa_d86d758a-2a56-4187-8e2a-052bbf1135cd_0](https://github.com/user-attachments/assets/c27172d2-11f7-4e55-ae38-a3cb85673ae8)
+
 Committer is a beautiful command-line tool (CLI) designed to leverage large language models (LLMs) to streamline the process of generating meaningful, concise, and descriptive commit messages.
 
 ## Features
