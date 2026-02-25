@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/thalesfsp/committer/internal/errorcatalog"
 	"github.com/thalesfsp/customerror"
@@ -123,6 +124,36 @@ func GitTag(tag string) error {
 // Executes 'git push --tags' to push all tags to the remote.
 func GitPushTags() error {
 	return RunCommand(exec.Command("git", "push", "--tags"))
+}
+
+// GitFetchTags fetches tags from the remote repository.
+// Runs 'git fetch --tags' to ensure local tags are up to date with remote.
+func GitFetchTags() error {
+	return RunCommand(exec.Command("git", "fetch", "--tags"))
+}
+
+// GitGetLatestTags retrieves the latest tags sorted by version (descending).
+// Uses 'git tag --sort=-version:refname' and returns up to `count` tags.
+func GitGetLatestTags(count int) ([]string, error) {
+	cmd := exec.Command("git", "tag", "--sort=-version:refname")
+
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	raw := strings.TrimSpace(string(out))
+	if raw == "" {
+		return nil, nil
+	}
+
+	allTags := strings.Split(raw, "\n")
+
+	if len(allTags) > count {
+		allTags = allTags[:count]
+	}
+
+	return allTags, nil
 }
 
 // RunCommand executes a given command and outputs its standard error content to

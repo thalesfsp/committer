@@ -152,6 +152,7 @@ func GenerateCommitMessageLoop(
 	providerInUse provider.IProvider,
 	llmAPICallTimeout time.Duration,
 	stats string, chunks []string,
+	autoAcceptMode bool,
 ) (string, error) {
 	totalChunks := len(chunks)
 
@@ -178,6 +179,11 @@ func GenerateCommitMessageLoop(
 			tui.SprinnerStop()
 
 			fmt.Printf("%s\n\n%s\n\n", tui.QuestionStyle.Render("Generated Commit Message:"), message)
+
+			// In auto-accept mode, approve immediately.
+			if autoAcceptMode {
+				return message, nil
+			}
 
 			choice := tui.MustPromptWithChoices("What would you like to do?", []string{
 				"Approve commit message",

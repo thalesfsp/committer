@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +25,9 @@ import (
 
 // CLI tool configuration flags.
 var (
+	// Auto-accept mode: add all, approve generated message, push, skip tag.
+	autoAccept bool
+
 	// Threshold for how large a diff chunk can be before splitting.
 	chunkThreshold int
 
@@ -93,9 +97,9 @@ Providers:
 			shared.NothingToDo()
 		}
 
-		// Prompt the user to stage changes if none are staged.
+		// Stage changes: auto-add in auto-accept mode, otherwise prompt.
 		if !git.HasStagedChanges() {
-			if tui.MustPromptYesNoTea(
+			if autoAccept || tui.MustPromptYesNoTea(
 				"Would you like to add all changes?", false) {
 				tui.SprinnerStart("Adding files...")
 
@@ -149,7 +153,8 @@ Providers:
 		commitMessage, err := provider.GenerateCommitMessageLoop(
 			providerInUse,
 			llmAPICallTimeout,
-			stats, chunks)
+			stats, chunks,
+			autoAccept)
 		if err != nil {
 			cliLogger.Fatalln(err)
 		}
@@ -169,10 +174,10 @@ Providers:
 
 		tui.SprinnerStop()
 
-		// Check with the user if they want to push their commits.
+		// Push: auto-push in auto-accept mode, otherwise prompt.
 		tui.SprinnerStart("Pushing changes...")
 
-		if tui.MustPromptYesNoTea("Would you like to push the commits?", true) {
+		if autoAccept || tui.MustPromptYesNoTea("Would you like to push the commits?", true) {
 			if err := git.GitPush(); err != nil {
 				cliLogger.Fatalln(err)
 			}
@@ -180,25 +185,119 @@ Providers:
 
 		tui.SprinnerStop()
 
-		// Optionally tag the commit if the user chooses.
-		tui.SprinnerStart("Tagging changes...")
-
-		if tui.MustPromptYesNoTea("Would you like to tag the commit?", false) {
-			tag := tui.MustPromptForInputTea("Enter the tag name:")
-			if err := git.GitTag(tag); err != nil {
-				cliLogger.Fatalln(err)
-			}
-
-			if err := git.GitPushTags(); err != nil {
-				cliLogger.Fatalln(err)
+		// Skip tagging in auto-accept mode. Otherwise, offer smart tagging.
+		if !autoAccept {
+			if tui.MustPromptYesNoTea("Would you like to tag the commit?", false) {
+				handleTagging()
 			}
 		}
-
-		tui.SprinnerStop()
 
 		// Gracefully exit the application.
 		os.Exit(0)
 	},
+}
+
+// bumpPatch takes a semver tag like "v1.2.3" and returns "v1.2.4".
+// Returns empty string if the tag doesn't match a recognized semver pattern.
+func bumpPatch(tag string) string {
+	raw := tag
+	prefix := ""
+
+	if strings.HasPrefix(raw, "v") {
+		prefix = "v"
+		raw = raw[1:]
+	}
+
+	parts := strings.Split(raw, ".")
+	if len(parts) != 3 {
+		return ""
+	}
+
+	patch, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%s%s.%s.%d", prefix, parts[0], parts[1], patch+1)
+}
+
+// handleTagging implements the smart tagging flow: fetches remote tags,
+// displays the latest 3, suggests next patch version, and lets user
+// accept or enter a custom tag.
+func handleTagging() {
+	tui.SprinnerStart("Fetching tags...")
+
+	if err := git.GitFetchTags(); err != nil {
+		tui.SprinnerStop()
+		cliLogger.Warnln("Failed to fetch remote tags, proceeding with local tags")
+	}
+
+	tags, err := git.GitGetLatestTags(3)
+
+	tui.SprinnerStop()
+
+	if err != nil || len(tags) == 0 {
+		// No existing tags — fall back to manual input.
+		fmt.Println(tui.HintStyle.Render("No existing tags found."))
+
+		tag := tui.MustPromptForInputTea("Enter the tag name:")
+		if tag == "" {
+			return
+		}
+
+		if err := git.GitTag(tag); err != nil {
+			cliLogger.Fatalln(err)
+		}
+
+		if err := git.GitPushTags(); err != nil {
+			cliLogger.Fatalln(err)
+		}
+
+		return
+	}
+
+	// Display latest tags.
+	fmt.Printf("\n%s\n", tui.QuestionStyle.Render("Latest tags:"))
+
+	for _, t := range tags {
+		fmt.Printf("  %s\n", t)
+	}
+
+	fmt.Println()
+
+	// Suggest next patch version based on the latest tag.
+	suggested := bumpPatch(tags[0])
+
+	choices := []string{}
+
+	if suggested != "" {
+		choices = append(choices, suggested+" (suggested)")
+	}
+
+	choices = append(choices, "Enter custom tag")
+
+	choice := tui.MustPromptWithChoices("Which tag would you like to use?", choices)
+
+	var tag string
+
+	switch {
+	case strings.HasSuffix(choice, "(suggested)"):
+		tag = suggested
+	case choice == "Enter custom tag":
+		tag = tui.MustPromptForInputTea("Enter the tag name:")
+	}
+
+	if tag == "" {
+		return
+	}
+
+	if err := git.GitTag(tag); err != nil {
+		cliLogger.Fatalln(err)
+	}
+
+	if err := git.GitPushTags(); err != nil {
+		cliLogger.Fatalln(err)
+	}
 }
 
 // Execute is called by main to run the root command and setup the CLI.
@@ -209,6 +308,8 @@ func Execute() error {
 // init is used to initialize the command and attach flags to it.
 func init() {
 	// Configure flags for chunk threshold, API call timeout, model, and provider.
+	rootCmd.Flags().BoolVarP(&autoAccept, "auto-accept", "a", false,
+		"Automatically add all files, approve the generated commit message, and push (skip tagging)")
 	rootCmd.Flags().IntVarP(&chunkThreshold, "chunk-threshold", "c", 128000,
 		"Chunk threshold in characters")
 	rootCmd.Flags().DurationVarP(&llmAPICallTimeout,
