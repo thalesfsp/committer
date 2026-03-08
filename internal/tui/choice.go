@@ -67,7 +67,6 @@ func (m ChoiceModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	default:
 		// Handle other types of messages if necessary.
-		fmt.Printf("HERE %+v", msg)
 	}
 
 	// Return the updated model and no command.

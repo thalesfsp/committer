@@ -30,7 +30,7 @@ Please generate a concise and descriptive commit message using the prescribed "C
 - Separate paragraphs with blank lines
 - Use bullet points for multiple points
 - Wrap at ~72 characters
-- No more change 240 characters
+- No more than 240 characters
 
 ### Examples
 

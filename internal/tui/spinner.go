@@ -70,10 +70,10 @@ func (m SpinnerModel) View() string {
 // Exported functionalities.
 //////
 
-// SprinnerStart starts the spinner with the given text.
-func SprinnerStart(text string) {
-	// Functionality only proceeds if not in debug mode.
-	if !shared.IsDebugMode() {
+// SpinnerStart starts the spinner with the given text.
+func SpinnerStart(text string) {
+	// Skip spinner in debug mode to avoid noisy output.
+	if shared.IsDebugMode() {
 		return
 	}
 
@@ -111,8 +111,8 @@ func SprinnerStart(text string) {
 	}()
 }
 
-// SprinnerStop stops the running spinner.
-func SprinnerStop() {
+// SpinnerStop stops the running spinner.
+func SpinnerStop() {
 	spinnerMutex.Lock() // Ensure exclusive access to shared resources.
 	defer spinnerMutex.Unlock()
 

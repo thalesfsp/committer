@@ -88,7 +88,7 @@ func CallLLM(
 	llmAPICallTimeout time.Duration,
 	prompt string,
 ) (string, error) {
-	ctxWithTimeout, cancel := context.WithTimeout(context.Background(), llmAPICallTimeout)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, llmAPICallTimeout)
 	defer cancel()
 
 	response, err := providerInUse.Completion(
@@ -162,7 +162,7 @@ func GenerateCommitMessageLoop(
 
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		for i, chunk := range chunks {
-			tui.SprinnerStart("Generating commit message...")
+			tui.SpinnerStart("Generating commit message...")
 
 			message, err := GenerateCommitMessage(
 				context.Background(),
@@ -176,7 +176,7 @@ func GenerateCommitMessageLoop(
 				return "", fmt.Errorf("failed to generate commit message: %w", err)
 			}
 
-			tui.SprinnerStop()
+			tui.SpinnerStop()
 
 			fmt.Printf("%s\n\n%s\n\n", tui.QuestionStyle.Render("Generated Commit Message:"), message)
 

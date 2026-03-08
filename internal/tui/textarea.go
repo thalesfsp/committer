@@ -17,7 +17,7 @@ import (
 type errMsg error
 
 // Define a model for managing the state of the text area.
-type TextAreModel struct {
+type TextAreaModel struct {
 	textarea textarea.Model
 	err      error
 	done     bool
@@ -28,12 +28,12 @@ type TextAreModel struct {
 //////
 
 // Init initializes the text area model for the Tea framework.
-func (m TextAreModel) Init() tea.Cmd {
+func (m TextAreaModel) Init() tea.Cmd {
 	return textarea.Blink
 }
 
 // Update handles messages for updating the text area model.
-func (m TextAreModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m TextAreaModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd // Collect asynchronous commands to be executed together later.
 
 	var cmd tea.Cmd
@@ -73,7 +73,7 @@ func (m TextAreModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View method renders the current state of the model into a viewable string format.
-func (m TextAreModel) View() string {
+func (m TextAreaModel) View() string {
 	if m.done {
 		return m.textarea.Value() + "\n\n" // Display the text area's content when done.
 	}
@@ -96,14 +96,14 @@ func (m TextAreModel) View() string {
 //////
 
 // Initialize the text area model with specific properties like placeholder and focus.
-func initializeTextAreModel() TextAreModel {
+func initializeTextAreaModel() TextAreaModel {
 	ti := textarea.New()
 	ti.Placeholder = "Start typing..."
 	ti.SetWidth(80)
 	ti.SetHeight(10)
 	ti.Focus() // Set the component to be focused initially for immediate user input.
 
-	return TextAreModel{
+	return TextAreaModel{
 		textarea: ti,
 		err:      nil,
 		done:     false, // Track completion status for user input (used to signal readiness to quit).
@@ -115,10 +115,8 @@ func initializeTextAreModel() TextAreModel {
 //////
 
 // CommitMessageTextArea is an entry function to interact with the text area model.
-//
-//nolint:forcetypeassert
 func CommitMessageTextArea() (string, error) {
-	p := tea.NewProgram(initializeTextAreModel())
+	p := tea.NewProgram(initializeTextAreaModel())
 
 	// Run the TUI program and capture the final model and potential errors.
 	m, err := p.Run()
@@ -127,8 +125,8 @@ func CommitMessageTextArea() (string, error) {
 	}
 
 	// When the model signals it's done, retrieve and return the textarea content.
-	if m.(TextAreModel).done {
-		return m.(TextAreModel).textarea.Value(), nil
+	if model, ok := m.(TextAreaModel); ok && model.done {
+		return model.textarea.Value(), nil
 	}
 
 	return "", nil

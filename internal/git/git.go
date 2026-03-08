@@ -139,7 +139,7 @@ func GitGetLatestTags(count int) ([]string, error) {
 
 	out, err := cmd.Output()
 	if err != nil {
-		return nil, err
+		return nil, errorcatalog.MustGet(errorcatalog.ErrFailedToGetTags, customerror.WithError(err))
 	}
 
 	raw := strings.TrimSpace(string(out))

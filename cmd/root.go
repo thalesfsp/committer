@@ -101,10 +101,10 @@ Providers:
 		if !git.HasStagedChanges() {
 			if autoAccept || tui.MustPromptYesNoTea(
 				"Would you like to add all changes?", false) {
-				tui.SprinnerStart("Adding files...")
+				tui.SpinnerStart("Adding files...")
 
 				if err := git.GitAddAll(); err != nil {
-					tui.SprinnerStop()
+					tui.SpinnerStop()
 
 					cliLogger.Fatalln(
 						errorcatalog.MustGet(
@@ -114,40 +114,40 @@ Providers:
 					)
 				}
 
-				tui.SprinnerStop()
+				tui.SpinnerStop()
 			} else {
 				shared.NothingToDo()
 			}
 		}
 
 		// Retrieve and process the Git diff and stats.
-		tui.SprinnerStart("Getting diff...")
+		tui.SpinnerStart("Getting diff...")
 
 		diff, err := git.GetGitDiff()
 		if err != nil {
 			cliLogger.Fatalln(err)
 		}
 
-		tui.SprinnerStop()
+		tui.SpinnerStop()
 
-		tui.SprinnerStart("Getting stats...")
+		tui.SpinnerStart("Getting stats...")
 
 		stats, err := git.GetGitStats()
 		if err != nil {
 			cliLogger.Fatalln(err)
 		}
 
-		tui.SprinnerStop()
+		tui.SpinnerStop()
 
 		// If needed, chunk the Git diff based on the defined threshold.
-		tui.SprinnerStart("Generating chunks...")
+		tui.SpinnerStart("Generating chunks...")
 
 		chunks, err := provider.ChunkDiff(chunkThreshold, diff)
 		if err != nil {
 			cliLogger.Fatalln(err)
 		}
 
-		tui.SprinnerStop()
+		tui.SpinnerStop()
 
 		// Generate the commit message by communicating with the LLM.
 		commitMessage, err := provider.GenerateCommitMessageLoop(
@@ -166,16 +166,16 @@ Providers:
 		}
 
 		// Commit the changes using the generated commit message.
-		tui.SprinnerStart("Committing changes...")
+		tui.SpinnerStart("Committing changes...")
 
 		if err := git.GitCommit(commitMessage); err != nil {
 			cliLogger.Fatalln(err)
 		}
 
-		tui.SprinnerStop()
+		tui.SpinnerStop()
 
 		// Push: auto-push in auto-accept mode, otherwise prompt.
-		tui.SprinnerStart("Pushing changes...")
+		tui.SpinnerStart("Pushing changes...")
 
 		if autoAccept || tui.MustPromptYesNoTea("Would you like to push the commits?", true) {
 			if err := git.GitPush(); err != nil {
@@ -183,7 +183,7 @@ Providers:
 			}
 		}
 
-		tui.SprinnerStop()
+		tui.SpinnerStop()
 
 		// Skip tagging in auto-accept mode. Otherwise, offer smart tagging.
 		if !autoAccept {
@@ -225,16 +225,16 @@ func bumpPatch(tag string) string {
 // displays the latest 3, suggests next patch version, and lets user
 // accept or enter a custom tag.
 func handleTagging() {
-	tui.SprinnerStart("Fetching tags...")
+	tui.SpinnerStart("Fetching tags...")
 
 	if err := git.GitFetchTags(); err != nil {
-		tui.SprinnerStop()
+		tui.SpinnerStop()
 		cliLogger.Warnln("Failed to fetch remote tags, proceeding with local tags")
 	}
 
 	tags, err := git.GitGetLatestTags(3)
 
-	tui.SprinnerStop()
+	tui.SpinnerStop()
 
 	if err != nil || len(tags) == 0 {
 		// No existing tags — fall back to manual input.

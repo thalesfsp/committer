@@ -14,6 +14,7 @@ const (
 	ErrFailedToCallLLM          = "ERR_FAILED_TO_CALL_LLM"           // FailedTo.
 	ErrFailedToChunkDiff        = "ERR_FAILED_TO_CHUNK_DIFF"         // FailedTo.
 	ErrFailedToCreateHTTPClient = "ERR_FAILED_TO_CREATE_HTTP_CLIENT" // FailedTo.
+	ErrFailedToGetTags          = "ERR_FAILED_TO_GET_TAGS"            // FailedTo.
 	ErrFailedToGitDiff          = "ERR_FAILED_TO_GIT_DIFF"           // FailedTo.
 	ErrFailedToGitStats         = "ERR_FAILED_TO_GIT_STATS"          // FailedTo.
 	ErrFailedToInitChunker      = "ERR_FAILED_TO_INIT_CHUNKER"       // FailedTo.
@@ -32,6 +33,7 @@ var errorCatalog = customerror.
 	MustSet(ErrFailedToCallLLM, "call LLM API").
 	MustSet(ErrFailedToChunkDiff, "chunk diff").
 	MustSet(ErrFailedToCreateHTTPClient, "create HTTP client").
+	MustSet(ErrFailedToGetTags, "retrieve git tags").
 	MustSet(ErrFailedToGitDiff, "obtain git diff").
 	MustSet(ErrFailedToGitStats, "obtain git stats").
 	MustSet(ErrFailedToInitChunker, "initialize chunker").
