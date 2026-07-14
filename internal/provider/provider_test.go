@@ -20,10 +20,10 @@ func (m *mockProvider) Completion(ctx context.Context, options ...provider.Func)
 	return m.completionFunc(ctx, options...)
 }
 
-func (m *mockProvider) GetClient() any               { return nil }
-func (m *mockProvider) GetLogger() sypl.ISypl         { return sypl.NewDefault("test", level.Info) }
-func (m *mockProvider) GetName() string               { return "mock" }
-func (m *mockProvider) GetType() string               { return "mock" }
+func (m *mockProvider) GetClient() any                          { return nil }
+func (m *mockProvider) GetLogger() sypl.ISypl                   { return sypl.NewDefault("test", level.Info) }
+func (m *mockProvider) GetName() string                         { return "mock" }
+func (m *mockProvider) GetType() string                         { return "mock" }
 func (m *mockProvider) GetCounterCompletion() *expvar.Int       { return expvar.NewInt("mock_completion") }
 func (m *mockProvider) GetCounterCompletionFailed() *expvar.Int { return expvar.NewInt("mock_failed") }
 
@@ -48,6 +48,7 @@ func TestCallLLM_RespectsParentContext(t *testing.T) {
 					return "", ctx.Err()
 				default:
 					t.Error("expected context to be cancelled, but it was not")
+
 					return "should not reach", nil
 				}
 			},
@@ -73,6 +74,7 @@ func TestCallLLM_RespectsParentContext(t *testing.T) {
 				if !ok || val != expectedVal {
 					t.Errorf("expected context value %q, got %q (ok=%v)", expectedVal, val, ok)
 				}
+
 				return "commit message", nil
 			},
 		}
@@ -97,6 +99,7 @@ func TestCallLLM_RespectsParentContext(t *testing.T) {
 				deadline, ok := ctx.Deadline()
 				if !ok {
 					t.Error("expected context to have a deadline")
+
 					return "", nil
 				}
 
