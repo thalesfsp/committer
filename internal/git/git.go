@@ -18,6 +18,7 @@ func IsCurrentDirectoryGitRepo() bool {
 	cmd := exec.Command("git", "rev-parse", "--is-inside-work-tree")
 
 	var stderr bytes.Buffer
+
 	cmd.Stderr = &stderr
 
 	// If the command returns an error, the current directory is not a Git repo.
@@ -38,6 +39,7 @@ func IsDirty() bool {
 	cmd := exec.Command("git", "diff", "--quiet")
 
 	var stderr bytes.Buffer
+
 	cmd.Stderr = &stderr
 
 	// If there is an error, it implies there are changes, hence returns true.
@@ -54,6 +56,7 @@ func HasStagedChanges() bool {
 	cmd := exec.Command("git", "diff", "--staged", "--quiet")
 
 	var stderr bytes.Buffer
+
 	cmd.Stderr = &stderr
 
 	// Returns true for any non-zero exit, meaning there are staged changes.
@@ -161,6 +164,7 @@ func GitGetLatestTags(count int) ([]string, error) {
 // of error handling logic.
 func RunCommand(cmd *exec.Cmd) error {
 	var stderr bytes.Buffer
+
 	cmd.Stderr = &stderr
 
 	// If the command fails, print the standard error to the console and return

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/thalesfsp/inference/provider"
-	"github.com/thalesfsp/sypl"
-	"github.com/thalesfsp/sypl/level"
+	"github.com/thalesfsp/sypl/v2"
+	"github.com/thalesfsp/sypl/v2/level"
 )
 
 // mockProvider implements provider.IProvider for testing.

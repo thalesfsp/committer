@@ -1,49 +1,123 @@
-run:
-  timeout: 1m
-
+version: "2"
 linters:
-  enable-all: true
+  default: all
   disable:
+    # Fleet-standard disables of new-in-v2 / opinionated linters that are NOT part
+    # of committer's v1 lint intent. v1 ran under `fast: true`, which never enabled
+    # these, and origin/main was green under golangci-lint v1.61.0 — so every finding
+    # from them is v2-only churn, not a regression to fix.
+    - cyclop         # not enabled under v1 fast:true; gocyclo/gocognit remain the complexity gate
+    - funcorder      # new in v2, opinionated method-ordering; churns untouched files
+    - godoclint      # new in v2, opinionated godoc phrasing/ordering
+    - noinlineerr    # inline `if err := ...` is house style
+    - wsl            # deprecated in v2, superseded by wsl_v5 (kept ON for non-test code)
+    - asasalint
+    - bodyclose
+    - canonicalheader
+    - containedctx
+    - contextcheck
     - depguard
-    - paralleltest
-    - testifylint
-    - funlen
+    - durationcheck
+    - err113
+    - errcheck
+    - errchkjson
+    - errname
+    - errorlint
+    - exhaustive
     - exhaustruct
-    - tagliatelle
-    - ireturn
-    - testpackage
-    - godox
-    - gomnd
-    - mnd
+    - exptostd
+    - fatcontext
+    - forbidigo
+    - forcetypeassert
+    - funlen
+    - ginkgolinter
+    - gochecknoglobals
     - gochecknoinits
-  fast: true
-
-
-# Settings for specific linters
-linters-settings:
-  revive:
-    ignore-generated-header: true
+    - gochecksumtype
+    - gocritic
+    - godox
+    - gosec
+    - gosmopolitan
+    - govet
+    - iface
+    - importas
+    - intrange
+    - ireturn
+    - loggercheck
+    - makezero
+    - mirror
+    - mnd
+    - musttag
+    - nilerr
+    - nilnesserr
+    - nilnil
+    - noctx
+    - nonamedreturns
+    - paralleltest
+    - perfsprint
+    - protogetter
+    - reassign
+    - recvcheck
+    - revive
+    - rowserrcheck
+    - sloglint
+    - spancheck
+    - sqlclosecheck
+    - staticcheck
+    - tagliatelle
+    - testifylint
+    - testpackage
+    - thelper
+    - tparallel
+    - unconvert
+    - unparam
+    - unused
+    - usetesting
+    - varnamelen
+    - wastedassign
+    - wrapcheck
+    - zerologlint
+  settings:
+    funlen:
+      lines: 250
+      statements: 45
+    revive:
+      rules:
+        - name: unused-parameter
+          disabled: true
+    wsl:
+      allow-trailing-comment: true
+      allow-separated-leading-comment: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      - name: "unused-parameter"
-        disabled: true
-
-  funlen:
-    lines: 250
-    statements: 45
-
-  wsl:
-    allow-separated-leading-comment: true
-    allow-trailing-comment: true
-
-
-issues:
-  exclude-rules:
-    - linters:
-        - wsl
-      text: "block should not start with a whitespace"
-      
-    - path: _test\.go
-      linters:
-        - containedctx
-        - wsl
-        - lll
+      - linters:
+          - wsl
+        text: block should not start with a whitespace
+      - linters:
+          - containedctx
+          - lll
+          - wsl
+          - wsl_v5
+        path: _test\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
