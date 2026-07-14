@@ -18,9 +18,9 @@ import (
 	"github.com/thalesfsp/inference/huggingface"
 	"github.com/thalesfsp/inference/ollama"
 	"github.com/thalesfsp/inference/openai"
-	"github.com/thalesfsp/sypl"
-	"github.com/thalesfsp/sypl/level"
-	"github.com/thalesfsp/sypl/processor"
+	"github.com/thalesfsp/sypl/v2"
+	"github.com/thalesfsp/sypl/v2/level"
+	"github.com/thalesfsp/sypl/v2/processor"
 )
 
 // CLI tool configuration flags.
