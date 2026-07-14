@@ -72,28 +72,44 @@ func TestChoiceModel_Update_Navigation(t *testing.T) {
 
 	// Move down.
 	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
-	cm := model.(ChoiceModel)
+	cm, ok := model.(ChoiceModel)
+	if !ok {
+		t.Fatal("expected ChoiceModel type")
+	}
+
 	if cm.cursor != 1 {
 		t.Errorf("expected cursor=1 after 'j', got %d", cm.cursor)
 	}
 
 	// Move down again.
 	model, _ = cm.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
-	cm = model.(ChoiceModel)
+	cm, ok = model.(ChoiceModel)
+	if !ok {
+		t.Fatal("expected ChoiceModel type")
+	}
+
 	if cm.cursor != 2 {
 		t.Errorf("expected cursor=2, got %d", cm.cursor)
 	}
 
 	// Wrap around at bottom.
 	model, _ = cm.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
-	cm = model.(ChoiceModel)
+	cm, ok = model.(ChoiceModel)
+	if !ok {
+		t.Fatal("expected ChoiceModel type")
+	}
+
 	if cm.cursor != 0 {
 		t.Errorf("expected cursor=0 (wrap), got %d", cm.cursor)
 	}
 
 	// Move up wraps to bottom.
 	model, _ = cm.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
-	cm = model.(ChoiceModel)
+	cm, ok = model.(ChoiceModel)
+	if !ok {
+		t.Fatal("expected ChoiceModel type")
+	}
+
 	if cm.cursor != 2 {
 		t.Errorf("expected cursor=2 (wrap up), got %d", cm.cursor)
 	}
