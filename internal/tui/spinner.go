@@ -53,6 +53,7 @@ func (m SpinnerModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinner.TickMsg:
 		// Update the spinner based on tick messages.
 		var cmd tea.Cmd
+
 		m.spinner, cmd = m.spinner.Update(msg)
 
 		return m, cmd
