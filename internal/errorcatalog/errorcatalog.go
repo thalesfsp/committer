@@ -14,7 +14,7 @@ const (
 	ErrFailedToCallLLM          = "ERR_FAILED_TO_CALL_LLM"           // FailedTo.
 	ErrFailedToChunkDiff        = "ERR_FAILED_TO_CHUNK_DIFF"         // FailedTo.
 	ErrFailedToCreateHTTPClient = "ERR_FAILED_TO_CREATE_HTTP_CLIENT" // FailedTo.
-	ErrFailedToGetTags          = "ERR_FAILED_TO_GET_TAGS"            // FailedTo.
+	ErrFailedToGetTags          = "ERR_FAILED_TO_GET_TAGS"           // FailedTo.
 	ErrFailedToGitDiff          = "ERR_FAILED_TO_GIT_DIFF"           // FailedTo.
 	ErrFailedToGitStats         = "ERR_FAILED_TO_GIT_STATS"          // FailedTo.
 	ErrFailedToInitChunker      = "ERR_FAILED_TO_INIT_CHUNKER"       // FailedTo.
