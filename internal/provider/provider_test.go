@@ -2,30 +2,21 @@ package provider
 
 import (
 	"context"
-	"expvar"
 	"testing"
 	"time"
-
-	"github.com/thalesfsp/inference/provider"
-	"github.com/thalesfsp/sypl/v2"
-	"github.com/thalesfsp/sypl/v2/level"
 )
 
-// mockProvider implements provider.IProvider for testing.
-type mockProvider struct {
-	completionFunc func(ctx context.Context, options ...provider.Func) (string, error)
+// mockLLM implements LLM for testing.
+type mockLLM struct {
+	generateFunc func(ctx context.Context, prompt string) (string, error)
 }
 
-func (m *mockProvider) Completion(ctx context.Context, options ...provider.Func) (string, error) {
-	return m.completionFunc(ctx, options...)
+func (m *mockLLM) Generate(ctx context.Context, prompt string) (string, error) {
+	return m.generateFunc(ctx, prompt)
 }
 
-func (m *mockProvider) GetClient() any                          { return nil }
-func (m *mockProvider) GetLogger() sypl.ISypl                   { return sypl.NewDefault("test", level.Info) }
-func (m *mockProvider) GetName() string                         { return "mock" }
-func (m *mockProvider) GetType() string                         { return "mock" }
-func (m *mockProvider) GetCounterCompletion() *expvar.Int       { return expvar.NewInt("mock_completion") }
-func (m *mockProvider) GetCounterCompletionFailed() *expvar.Int { return expvar.NewInt("mock_failed") }
+func (m *mockLLM) Provider() string { return "mock" }
+func (m *mockLLM) Model() string    { return "mock-model" }
 
 // TestCallLLM_RespectsParentContext verifies that CallLLM propagates the
 // parent context rather than discarding it.
@@ -38,9 +29,9 @@ func TestCallLLM_RespectsParentContext(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // Cancel immediately.
 
-		mock := &mockProvider{
-			completionFunc: func(ctx context.Context, options ...provider.Func) (string, error) {
-				// The context passed to Completion should be derived from
+		mock := &mockLLM{
+			generateFunc: func(ctx context.Context, _ string) (string, error) {
+				// The context passed to Generate should be derived from
 				// the parent context. Since the parent is cancelled, this
 				// derived context should also be done.
 				select {
@@ -67,8 +58,8 @@ func TestCallLLM_RespectsParentContext(t *testing.T) {
 
 		ctx := context.WithValue(context.Background(), key, expectedVal)
 
-		mock := &mockProvider{
-			completionFunc: func(ctx context.Context, options ...provider.Func) (string, error) {
+		mock := &mockLLM{
+			generateFunc: func(ctx context.Context, _ string) (string, error) {
 				// The context should carry values from the parent context.
 				val, ok := ctx.Value(key).(string)
 				if !ok || val != expectedVal {
@@ -93,8 +84,8 @@ func TestCallLLM_RespectsParentContext(t *testing.T) {
 		ctx := context.Background()
 		shortTimeout := 50 * time.Millisecond
 
-		mock := &mockProvider{
-			completionFunc: func(ctx context.Context, options ...provider.Func) (string, error) {
+		mock := &mockLLM{
+			generateFunc: func(ctx context.Context, _ string) (string, error) {
 				// Verify deadline is set.
 				deadline, ok := ctx.Deadline()
 				if !ok {
@@ -120,6 +111,24 @@ func TestCallLLM_RespectsParentContext(t *testing.T) {
 
 		if result != "result" {
 			t.Errorf("expected 'result', got %q", result)
+		}
+	})
+
+	t.Run("prompt is passed through unchanged", func(t *testing.T) {
+		const prompt = "generate a commit message"
+
+		mock := &mockLLM{
+			generateFunc: func(_ context.Context, got string) (string, error) {
+				if got != prompt {
+					t.Errorf("expected prompt %q, got %q", prompt, got)
+				}
+
+				return "ok", nil
+			},
+		}
+
+		if _, err := CallLLM(context.Background(), mock, time.Second, prompt); err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 }

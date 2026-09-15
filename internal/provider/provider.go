@@ -11,58 +11,10 @@ import (
 	"github.com/thalesfsp/committer/internal/textsplitter"
 	"github.com/thalesfsp/committer/internal/tui"
 	"github.com/thalesfsp/customerror"
-	"github.com/thalesfsp/inference/anthropic"
-	"github.com/thalesfsp/inference/huggingface"
-	"github.com/thalesfsp/inference/ollama"
-	"github.com/thalesfsp/inference/openai"
-	"github.com/thalesfsp/inference/provider"
 )
 
 //go:embed commit.prompt
 var commitPrompt string
-
-// InitializeLLMProvider initialize the LLM provider.
-func InitializeLLMProvider(
-	llmProvider string,
-	llmModel string,
-) (provider.IProvider, error) {
-	var providerInUse provider.IProvider
-
-	switch llmProvider {
-	case openai.Name:
-		oai, err := openai.NewDefault(provider.WithDefaulModel(llmModel))
-		if err != nil {
-			return nil, errorcatalog.MustGet(errorcatalog.ErrFailedToSetupLLM).New()
-		}
-
-		providerInUse = oai
-	case anthropic.Name:
-		anth, err := anthropic.NewDefault(provider.WithDefaulModel(llmModel))
-		if err != nil {
-			return nil, errorcatalog.MustGet(errorcatalog.ErrFailedToSetupLLM).New()
-		}
-
-		providerInUse = anth
-	case ollama.Name:
-		oll, err := ollama.NewDefault(provider.WithDefaulModel(llmModel))
-		if err != nil {
-			return nil, errorcatalog.MustGet(errorcatalog.ErrFailedToSetupLLM).New()
-		}
-
-		providerInUse = oll
-	case huggingface.Name:
-		hf, err := huggingface.NewDefault(provider.WithDefaulModel(llmModel))
-		if err != nil {
-			return nil, errorcatalog.MustGet(errorcatalog.ErrFailedToSetupLLM).New()
-		}
-
-		providerInUse = hf
-	default:
-		return nil, errorcatalog.MustGet(errorcatalog.ErrInvalidProvider).New()
-	}
-
-	return providerInUse, nil
-}
 
 // ChunkDiff chunks the diff if it's too big.
 func ChunkDiff(maxChars int, diff string) ([]string, error) {
@@ -81,25 +33,18 @@ func ChunkDiff(maxChars int, diff string) ([]string, error) {
 	return chunks, nil
 }
 
-// CallLLM calls the LLM API (OpenAI, Anthropic, or Ollama, etc).
+// CallLLM asks the LLM for a completion, bounding the call with the given
+// timeout on top of the caller's context.
 func CallLLM(
 	ctx context.Context,
-	providerInUse provider.IProvider,
+	llm LLM,
 	llmAPICallTimeout time.Duration,
 	prompt string,
 ) (string, error) {
 	ctxWithTimeout, cancel := context.WithTimeout(ctx, llmAPICallTimeout)
 	defer cancel()
 
-	response, err := providerInUse.Completion(
-		ctxWithTimeout,
-		provider.WithUserMessages(prompt),
-	)
-	if err != nil {
-		return "", err
-	}
-
-	return response, nil
+	return llm.Generate(ctxWithTimeout, prompt)
 }
 
 // handleTryAgain handles the "Try again" choice.
@@ -149,7 +94,7 @@ For complex changes, summarize the overall impact rather than listing technical 
 
 // GenerateCommitMessageLoop definition.
 func GenerateCommitMessageLoop(
-	providerInUse provider.IProvider,
+	llm LLM,
 	llmAPICallTimeout time.Duration,
 	stats string, chunks []string,
 	autoAcceptMode bool,
@@ -160,13 +105,13 @@ func GenerateCommitMessageLoop(
 
 	maxAttempts := 5 // Define a maximum number of attempts to prevent infinite loops
 
-	for attempt := 0; attempt < maxAttempts; attempt++ {
+	for range maxAttempts {
 		for i, chunk := range chunks {
 			tui.SpinnerStart("Generating commit message...")
 
 			message, err := GenerateCommitMessage(
 				context.Background(),
-				providerInUse,
+				llm,
 				llmAPICallTimeout,
 				stats, chunk,
 				i+1, totalChunks,
@@ -221,7 +166,7 @@ func GenerateCommitMessageLoop(
 // additional instructions.
 func GenerateCommitMessage(
 	ctx context.Context,
-	providerInUse provider.IProvider,
+	llm LLM,
 	llmAPICallTimeout time.Duration,
 	stats, diff string,
 	chunkNumber, totalChunks int,
@@ -249,7 +194,7 @@ func GenerateCommitMessage(
 	}
 
 	// Call LLM API
-	message, err := CallLLM(ctx, providerInUse, llmAPICallTimeout, prompt)
+	message, err := CallLLM(ctx, llm, llmAPICallTimeout, prompt)
 	if err != nil {
 		return "", err
 	}

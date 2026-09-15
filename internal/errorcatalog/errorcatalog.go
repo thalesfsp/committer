@@ -23,6 +23,9 @@ const (
 	ErrFailedToSetupLLM         = "ERR_FAILED_TO_SETUP_LLM"          // FailedTo.
 	ErrFailedToStageFiles       = "ERR_FAILED_TO_STAGE_FILES"        // FailedTo.
 	ErrInvalidProvider          = "ERR_INVALID_PROVIDER"             // Invalid.
+	ErrMissingAPIKey            = "ERR_MISSING_API_KEY"              // Missing.
+	ErrMissingBaseURL           = "ERR_MISSING_BASE_URL"             // Missing.
+	ErrMissingModel             = "ERR_MISSING_MODEL"                // Missing.
 	ErrNotGitRepo               = "ERR_NOT_GIT_REPO"                 // Required.
 )
 
@@ -42,6 +45,9 @@ var errorCatalog = customerror.
 	MustSet(ErrFailedToSetupLLM, "setup LLM API").
 	MustSet(ErrFailedToStageFiles, "stage files").
 	MustSet(ErrInvalidProvider, "provider").
+	MustSet(ErrMissingAPIKey, "API key").
+	MustSet(ErrMissingBaseURL, "base URL").
+	MustSet(ErrMissingModel, "model").
 	MustSet(ErrNotGitRepo, "current directory is not a git repository")
 
 //////

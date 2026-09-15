@@ -11,6 +11,7 @@ linters:
     - godoclint      # new in v2, opinionated godoc phrasing/ordering
     - noinlineerr    # inline `if err := ...` is house style
     - wsl            # deprecated in v2, superseded by wsl_v5 (kept ON for non-test code)
+    - exhaustruct_v5 # new in v2.13, successor of exhaustruct (disabled below); churns untouched files
     - asasalint
     - bodyclose
     - canonicalheader

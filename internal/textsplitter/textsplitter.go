@@ -142,10 +142,7 @@ func (s TokenSplitter) calculateNextIndices(
 	nextStart := currentStart + s.ChunkSize - s.ChunkOverlap
 
 	// Calculate the next ending point.
-	nextEnd := nextStart + s.ChunkSize
-	if nextEnd > totalTokens {
-		nextEnd = totalTokens
-	}
+	nextEnd := min(nextStart+s.ChunkSize, totalTokens)
 
 	return nextStart, nextEnd
 }
