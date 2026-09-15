@@ -26,6 +26,7 @@ const (
 	ErrMissingAPIKey            = "ERR_MISSING_API_KEY"              // Missing.
 	ErrMissingBaseURL           = "ERR_MISSING_BASE_URL"             // Missing.
 	ErrMissingModel             = "ERR_MISSING_MODEL"                // Missing.
+	ErrNoTerminal               = "ERR_NO_TERMINAL"                  // Required.
 	ErrNotGitRepo               = "ERR_NOT_GIT_REPO"                 // Required.
 )
 
@@ -48,6 +49,8 @@ var errorCatalog = customerror.
 	MustSet(ErrMissingAPIKey, "API key").
 	MustSet(ErrMissingBaseURL, "base URL").
 	MustSet(ErrMissingModel, "model").
+	MustSet(ErrNoTerminal, "no terminal attached, interactive prompts need one: "+
+		"use --auto-accept (-a) when stdin or stdout is redirected").
 	MustSet(ErrNotGitRepo, "current directory is not a git repository")
 
 //////

@@ -62,6 +62,8 @@ export OPENAI_COMPATIBLE_API_KEY=...
 committer -p openai-compatible --base-url https://api.cerebras.ai/v1 -m gpt-oss-120b
 ```
 
+Auto-accept mode (`-a`) never prompts, so it also works without a terminal, for example from a git hook or a CI job, printing plain progress lines instead of the spinner.
+
 To stop repeating the flags, set the defaults once in your shell config:
 
 ```sh
