@@ -4,6 +4,14 @@ on:
   push:
     tags:
       - "*" # Triggers only if push new tag version.
+  # Manual releases: creates the tag from the chosen ref and releases it in the
+  # same run, for anyone (or any automation) that cannot push tags directly.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tag to create and release, e.g. v0.2.0"
+        required: true
+        type: string
 
 jobs:
   build:
@@ -21,6 +29,23 @@ jobs:
         with:
           fetch-depth: 0
       - run: git fetch --force --tags
+
+      - name: Create the release tag (manual runs only)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          case "$VERSION" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "version must look like v1.2.3, got '$VERSION'"; exit 1 ;;
+          esac
+          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+            echo "tag $VERSION already exists"; exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "$VERSION"
+          git push origin "refs/tags/$VERSION"
 
       - uses: actions/setup-go@v3
         with:

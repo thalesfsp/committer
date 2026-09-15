@@ -95,6 +95,13 @@ Providers:
 				errorcatalog.ErrNotGitRepo).New())
 		}
 
+		// Interactive mode prompts through the TUI, which needs a terminal.
+		// Auto-accept mode never prompts, so it runs fine from hooks and CI.
+		if !autoAccept && !tui.IsInteractive() {
+			cliLogger.Fatalln(errorcatalog.MustGet(
+				errorcatalog.ErrNoTerminal).New())
+		}
+
 		// Initialize the LLM provider using configuration provided by the user.
 		llm, err := provider.InitializeLLMProvider(cmd.Context(), provider.Config{
 			Provider:        llmProvider,

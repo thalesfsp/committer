@@ -39,6 +39,7 @@ func TestErrorCatalog_AllEntriesExist(t *testing.T) {
 		ErrMissingAPIKey,
 		ErrMissingBaseURL,
 		ErrMissingModel,
+		ErrNoTerminal,
 		ErrNotGitRepo,
 	}
 

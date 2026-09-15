@@ -2,6 +2,8 @@ package tui
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"sync"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -22,6 +24,10 @@ var spinnerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF875F"))
 var (
 	spinnerProgram *tea.Program // Represents the spinner's program instance
 	spinnerMutex   sync.Mutex   // Ensures thread-safe operation for the spinner
+
+	// spinnerOutput receives the plain status lines printed when there is no
+	// terminal to animate the spinner on.
+	spinnerOutput io.Writer = os.Stdout
 )
 
 // SpinnerModel contains the state and behavior of the spinner.
@@ -71,7 +77,9 @@ func (m SpinnerModel) View() string {
 // Exported functionalities.
 //////
 
-// SpinnerStart starts the spinner with the given text.
+// SpinnerStart starts the spinner with the given text. Without a terminal
+// (a git hook, a CI job, redirected stdin or stdout) it prints the text as a
+// plain line instead, since Bubble Tea cannot run there.
 func SpinnerStart(text string) {
 	// Skip spinner in debug mode to avoid noisy output.
 	if shared.IsDebugMode() {
@@ -83,6 +91,13 @@ func SpinnerStart(text string) {
 
 	// Do nothing if a spinner is already running.
 	if spinnerProgram != nil {
+		return
+	}
+
+	// No terminal: report progress as plain text and leave no program to stop.
+	if !interactive() {
+		fmt.Fprintln(spinnerOutput, text)
+
 		return
 	}
 
