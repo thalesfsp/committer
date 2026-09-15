@@ -36,6 +36,9 @@ func TestErrorCatalog_AllEntriesExist(t *testing.T) {
 		ErrFailedToSetupLLM,
 		ErrFailedToStageFiles,
 		ErrInvalidProvider,
+		ErrMissingAPIKey,
+		ErrMissingBaseURL,
+		ErrMissingModel,
 		ErrNotGitRepo,
 	}
 

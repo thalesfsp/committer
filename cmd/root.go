@@ -14,10 +14,6 @@ import (
 	"github.com/thalesfsp/committer/internal/shared"
 	"github.com/thalesfsp/committer/internal/tui"
 	"github.com/thalesfsp/customerror"
-	"github.com/thalesfsp/inference/anthropic"
-	"github.com/thalesfsp/inference/huggingface"
-	"github.com/thalesfsp/inference/ollama"
-	"github.com/thalesfsp/inference/openai"
 	"github.com/thalesfsp/sypl/v2"
 	"github.com/thalesfsp/sypl/v2/level"
 	"github.com/thalesfsp/sypl/v2/processor"
@@ -33,6 +29,12 @@ var (
 
 	// Timeout duration for LLM API calls.
 	llmAPICallTimeout time.Duration
+
+	// Override for the provider's API base URL.
+	llmBaseURL string
+
+	// Maximum number of output tokens per LLM call.
+	llmMaxOutputTokens int64
 
 	// The model to be used for LLM.
 	llmModel string
@@ -60,18 +62,28 @@ var rootCmd = &cobra.Command{
   messages based on the changes staged in a Git repository.
 
 Providers:
-  Each provider has their own requirements. OpenAI requires the
-  OPENAI_API_KEY env var to be set while Claude (Anthropic)
-  requires the ANTHROPIC_API_KEY env var. For the Ollama provider
-  you can set its endpoint by setting the OLLAMA_ENDPOINT env var.
-  Hugging Face provider requires HUGGINGFACE_API_KEY env var.`,
-	Example: `  Use Anthropic provider with their most capable model.
-  $ committer -p anthropic -m claude-3-5-sonnet-20240620
-  
-  Use Hugging Face provider with Qwen/Qwen2.5-Coder-32B-Instruct
-  $ committer -p huggingface -m Qwen/Qwen2.5-Coder-32B-Instruct
-  `,
-	Run: func(_ *cobra.Command, _ []string) {
+  Committer talks to OpenAI, Anthropic (Claude), Google (Gemini),
+  xAI (Grok), Groq, DeepSeek, Mistral, OpenRouter, Hugging Face,
+  Ollama, Azure OpenAI, Amazon Bedrock and any OpenAI-compatible
+  endpoint. Each provider reads its API key from its usual
+  environment variable (OPENAI_API_KEY, ANTHROPIC_API_KEY,
+  XAI_API_KEY, ...) and has a sensible default model. Run
+  "committer providers" for the full list.
+
+  The provider and model can also be set once through the
+  COMMITTER_PROVIDER and COMMITTER_MODEL environment variables.`,
+	Example: `  Use Anthropic (Claude) with the default model.
+  $ committer -p anthropic
+
+  Use xAI (Grok) with a specific model.
+  $ committer -p xai -m grok-4.5
+
+  Use a local Ollama model.
+  $ committer -p ollama -m qwen3
+
+  Use any OpenAI-compatible server, e.g. LM Studio.
+  $ committer -p openai-compatible --base-url http://localhost:1234/v1 -m my-model`,
+	Run: func(cmd *cobra.Command, _ []string) {
 		// Check if debug mode is enabled and set a breakpoint if so.
 		if shared.IsDebugMode() {
 			cliLogger.Breakpoint(shared.Name)
@@ -84,13 +96,17 @@ Providers:
 		}
 
 		// Initialize the LLM provider using configuration provided by the user.
-		providerInUse, err := provider.InitializeLLMProvider(
-			llmProvider,
-			llmModel,
-		)
+		llm, err := provider.InitializeLLMProvider(cmd.Context(), provider.Config{
+			Provider:        llmProvider,
+			Model:           llmModel,
+			BaseURL:         llmBaseURL,
+			MaxOutputTokens: llmMaxOutputTokens,
+		})
 		if err != nil {
 			cliLogger.Fatalln(err)
 		}
+
+		fmt.Println(tui.HintStyle.Render(fmt.Sprintf("Using %s (%s)", llm.Provider(), llm.Model())))
 
 		// If there are no changes to be committed, exit the process.
 		if !git.HasStagedChanges() && !git.IsDirty() {
@@ -151,7 +167,7 @@ Providers:
 
 		// Generate the commit message by communicating with the LLM.
 		commitMessage, err := provider.GenerateCommitMessageLoop(
-			providerInUse,
+			llm,
 			llmAPICallTimeout,
 			stats, chunks,
 			autoAccept)
@@ -305,6 +321,16 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
+// envOr returns the value of the environment variable, or the fallback when
+// it is unset or empty.
+func envOr(key, fallback string) string {
+	if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+		return value
+	}
+
+	return fallback
+}
+
 // init is used to initialize the command and attach flags to it.
 func init() {
 	// Configure flags for chunk threshold, API call timeout, model, and provider.
@@ -313,22 +339,22 @@ func init() {
 	rootCmd.Flags().IntVarP(&chunkThreshold, "chunk-threshold", "c", 128000,
 		"Chunk threshold in characters")
 	rootCmd.Flags().DurationVarP(&llmAPICallTimeout,
-		"llm-api-call-timeout", "t", 30*time.Second, "LLM API call timeout")
+		"llm-api-call-timeout", "t", 60*time.Second, "LLM API call timeout, including retries")
 	rootCmd.Flags().StringVarP(&llmModel, "model", "m",
-		"gpt-4o", "Model to be used by the provider for generating commit messages")
+		envOr("COMMITTER_MODEL", ""),
+		"Model to be used by the provider, defaults to the provider's default model (env: COMMITTER_MODEL)")
+	rootCmd.Flags().StringVarP(&llmBaseURL, "base-url", "u", "",
+		"Override the provider's API base URL (env: e.g. OPENAI_BASE_URL, XAI_BASE_URL, OLLAMA_HOST)")
+	rootCmd.Flags().Int64Var(&llmMaxOutputTokens, "max-tokens", provider.DefaultMaxOutputTokens,
+		"Maximum number of output tokens per LLM call, reasoning tokens count towards it")
 
 	// Construct the message detailing which providers are allowed.
 	llmProviderMsg := fmt.Sprintf(
-		"LLM providers, allowed: %s",
-		strings.Join([]string{
-			openai.Name,
-			anthropic.Name,
-			ollama.Name,
-			huggingface.Name,
-		}, ", "),
+		"LLM provider, allowed: %s (env: COMMITTER_PROVIDER)",
+		strings.Join(provider.Names(), ", "),
 	)
 
 	// Assign the provider flag, enabling selection of the desired LLM provider.
 	rootCmd.Flags().StringVarP(&llmProvider, "provider", "p",
-		openai.Name, llmProviderMsg)
+		envOr("COMMITTER_PROVIDER", provider.OpenAI), llmProviderMsg)
 }

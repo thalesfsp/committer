@@ -35,8 +35,8 @@ endif
 
 lint:
 ifndef HAS_GOLANGCI
-	@echo "Could not find golangci-list, installing it"
-	@go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0
+	@echo "Could not find golangci-lint, installing it"
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.13.2
 endif
 	@golangci-lint run -v -c .golangci.yml && echo "Lint OK"
 
