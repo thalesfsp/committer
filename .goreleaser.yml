@@ -44,11 +44,15 @@ builds:
 source:
   enabled: true
 
-# SEE: https://shibumi.dev/posts/keyless-signatures-with-github-actions/
+# Keyless signing with cosign v3: service URLs (issuer, Fulcio, Rekor) come
+# from cosign's signing config, so none are passed explicitly, and each
+# artifact gets a self-contained Sigstore bundle that `cosign verify-blob
+# --bundle` consumes.
+# SEE: https://docs.sigstore.dev/cosign/signing/signing_with_blobs/
 signs:
   - cmd: cosign
-    signature: "${artifact}.sig"
-    args: ["sign-blob", "--oidc-issuer=https://token.actions.githubusercontent.com", "--yes", "--output-signature=${signature}", "${artifact}"]
+    signature: "${artifact}.sigstore.json"
+    args: ["sign-blob", "--yes", "--bundle=${signature}", "${artifact}"]
     artifacts: all
 
 checksum:

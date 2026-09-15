@@ -28,7 +28,7 @@ jobs:
           cache: true
 
       - name: install cosign
-        uses: sigstore/cosign-installer@main
+        uses: sigstore/cosign-installer@v3
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
@@ -36,4 +36,3 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COSIGN_EXPERIMENTAL: 1
